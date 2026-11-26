@@ -72,21 +72,6 @@ export async function getMetadata(path: string): Promise<Entry | null> {
   }
 }
 
-export async function listFolderRecursive(path: string): Promise<Entry[]> {
-  const first = await rpc<{ entries: Entry[]; cursor: string; has_more: boolean }>('files/list_folder', { path, recursive: true })
-  const entries = [...first.entries]
-  let page = first
-  while (page.has_more) {
-    page = await rpc('files/list_folder/continue', { cursor: page.cursor })
-    entries.push(...page.entries)
-  }
-  return entries
-}
-
-export async function deletePath(path: string): Promise<void> {
-  await rpc('files/delete_v2', { path })
-}
-
 export async function downloadText(path: string): Promise<string> {
   const res = await fetch(`${CONTENT_BASE}/files/download`, {
     method: 'POST',

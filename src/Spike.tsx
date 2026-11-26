@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { DIARY_FOLDER } from './config'
-import { DropboxError, deletePath, downloadText, getMetadata, listFolder, listFolderRecursive, upload } from './dropbox/api'
+import { DropboxError, downloadText, getMetadata, listFolder } from './dropbox/api'
 import { logout } from './dropbox/auth'
-import { resolveVaultRoot } from './dropbox/vault'
+import { resolveVaultRoot, writeVaultFile } from './dropbox/vault'
 
 type Log = { ok: boolean; text: string }
 
 const TEST_NAMES = ['dairys-test.md', 'dairys-テスト.md']
 
-const STRAY_CHAIN = ['/Apps', '/Apps/remotely-save', '/Apps/remotely-save/Diary', '/Apps/remotely-save/Diary/40_Diary']
 
 function testPaths(root: string): string[] {
   return TEST_NAMES.map((name) => `${root}/${DIARY_FOLDER}/${name}`)
@@ -60,7 +59,7 @@ export default function Spike({ onLogout }: { onLogout: () => void }) {
       const root = await resolveVaultRoot()
       for (const path of testPaths(root)) {
         const content = testContent('書き込み')
-        const entry = await upload(path, content, { kind: 'overwrite' })
+        const entry = await writeVaultFile(path, content, { kind: 'overwrite' })
         const back = await downloadText(path)
         push(back === content, `${entry.path_display} rev=${entry.rev} 読み戻し${back === content ? '一致' : '不一致'}`)
       }
@@ -72,10 +71,10 @@ export default function Spike({ onLogout }: { onLogout: () => void }) {
       const path = testPaths(root)[0]
       const meta = await getMetadata(path)
       if (!meta?.rev) throw new Error('先に書き込みテストを実行してください')
-      const updated = await upload(path, testContent('rev 一致で更新'), { kind: 'update', rev: meta.rev })
+      const updated = await writeVaultFile(path, testContent('rev 一致で更新'), { kind: 'update', rev: meta.rev })
       push(true, `最新 rev で更新: 成功 rev=${updated.rev}`)
       try {
-        await upload(path, testContent('古い rev で更新'), { kind: 'update', rev: meta.rev })
+        await writeVaultFile(path, testContent('古い rev で更新'), { kind: 'update', rev: meta.rev })
         push(false, '古い rev で更新: 成功してしまった（競合を検出できない）')
       } catch (e) {
         if (e instanceof DropboxError && e.isConflict) push(true, '古い rev で更新: 競合として拒否された（期待どおり）')
@@ -83,38 +82,15 @@ export default function Spike({ onLogout }: { onLogout: () => void }) {
       }
     })
 
-  const cleanupStray = () =>
-    run('誤って作った /Apps/remotely-save/Diary の片付け', async () => {
-      const root = await resolveVaultRoot(true)
-      if (root.toLowerCase() === '/apps/remotely-save/diary') throw new Error('Vault 本体が /Apps 配下のため片付けを中止')
-      for (const folder of STRAY_CHAIN) {
-        const meta = await getMetadata(folder)
-        if (!meta) {
-          push(true, `${folder}: 存在しない`)
-          return
-        }
-        const files = (await listFolderRecursive(folder)).filter((e) => e['.tag'] === 'file')
-        const onlyTests = files.every((f) => TEST_NAMES.includes(f.name) && f.path_display.toLowerCase().startsWith('/apps/remotely-save/diary/40_diary/'))
-        push(true, `${folder}: ファイル${files.length}件 ${onlyTests ? '（テストファイルのみ）' : '（他のファイルあり）'}`)
-        if (onlyTests) {
-          await deletePath(folder)
-          push(true, `${folder} を削除しました`)
-          return
-        }
-      }
-      push(false, 'テストファイル以外を含むため削除しませんでした')
-    })
-
   return (
-    <section className="spike">
-      <h2>技術検証（Step 1）</h2>
+    <section className="card stack">
+      <h2>🧪 技術検証（Step 1）</h2>
       <div className="buttons">
-        <button disabled={busy} onClick={checkVault}>1. Vault を確認</button>
-        <button disabled={busy} onClick={writeTest}>2. テストファイルを書き込む</button>
-        <button disabled={busy} onClick={lockTest}>3. 競合検出を確認</button>
-        <button disabled={busy} className="secondary" onClick={cleanupStray}>誤作成フォルダの片付け</button>
+        <button className="btn ghost" disabled={busy} onClick={checkVault}>1. Vault を確認</button>
+        <button className="btn ghost" disabled={busy} onClick={writeTest}>2. テストファイルを書き込む</button>
+        <button className="btn ghost" disabled={busy} onClick={lockTest}>3. 競合検出を確認</button>
         <button
-          className="secondary"
+          className="btn danger"
           onClick={() => {
             logout()
             onLogout()

@@ -1,4 +1,8 @@
-import { DROPBOX_APP_KEY, REDIRECT_URI } from '../config'
+import { DROPBOX_APP_KEY } from '../config'
+
+function redirectUri(): string {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+}
 
 const TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token'
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
@@ -74,7 +78,7 @@ export async function startLogin(): Promise<void> {
   url.search = new URLSearchParams({
     client_id: DROPBOX_APP_KEY,
     response_type: 'code',
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri(),
     code_challenge: await sha256Base64Url(verifier),
     code_challenge_method: 'S256',
     token_access_type: 'offline',
@@ -88,7 +92,7 @@ export async function handleRedirect(): Promise<boolean> {
   const code = params.get('code')
   const error = params.get('error')
   if (!code && !error) return false
-  window.history.replaceState(null, '', REDIRECT_URI)
+  window.history.replaceState(null, '', redirectUri())
   if (error) throw new Error(`authorize: ${error} ${params.get('error_description') ?? ''}`)
   const verifier = localStorage.getItem(VERIFIER_KEY)
   const state = localStorage.getItem(STATE_KEY)
@@ -99,7 +103,7 @@ export async function handleRedirect(): Promise<boolean> {
     grant_type: 'authorization_code',
     code: code!,
     code_verifier: verifier,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri(),
   })
   if (!res.refresh_token) throw new Error('authorize: refresh_token missing')
   writeToken({
