@@ -1146,3 +1146,161 @@ p {
   padding-bottom: 2px;
   scrollbar-width: none;
 }
+
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1.5px solid var(--line);
+}
+
+.toggle button {
+  padding: 8px 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggle button.on.expense {
+  background: var(--cream);
+  color: var(--cream-ink);
+}
+
+.toggle button.on.income {
+  background: var(--mint);
+  color: var(--mint-ink);
+}
+
+.amount-field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+}
+
+.amount-field:focus-within {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft);
+}
+
+.amount-field .yen {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.amount-field input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 2rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-field input:focus {
+  outline: none;
+}
+
+.amount-field input::placeholder {
+  color: var(--ink-faint);
+}
+
+.amount-field.income input {
+  color: var(--mint-ink);
+}
+
+.amount-field.expense input {
+  color: var(--cream-ink);
+}
+
+.amount-sheet .row .btn {
+  flex: 1;
+}
+
+.tag-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tag.cream.removable button:not(.tag-edit) {
+  background: rgba(121, 89, 26, 0.12);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--line-strong);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--teal);
+}
+
+.switch[aria-checked='true']::after {
+  transform: translateX(22px);
+}
+
+.tag.removable .tag-edit {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+.chip-add:focus-within {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}

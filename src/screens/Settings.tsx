@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { logout } from '../dropbox/auth'
 import { forgetVaultRoot, resolveVaultRoot } from '../dropbox/vault'
+import { isWeatherEnabled, setWeatherEnabled } from '../diary/weather'
 import { Glyph } from '../ui/Icon'
 import { loadDirectory } from '../vault/directory'
 import { useDirectory } from '../vault/useDirectory'
 
 export default function Settings({ onLogout, onOpenSpike, onOpenUnresolved }: { onLogout: () => void; onOpenSpike: () => void; onOpenUnresolved: () => void }) {
   const dir = useDirectory()
+  const [weatherOn, setWeatherOn] = useState(isWeatherEnabled)
   const [root, setRoot] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -69,6 +71,25 @@ export default function Settings({ onLogout, onOpenSpike, onOpenUnresolved }: { 
           <Glyph name="refresh" />
           {dir.status === 'loading' ? `読み込み中（${dir.progress.done} / ${dir.progress.total}）` : '候補を読み込み直す'}
         </button>
+      </section>
+      <section className="card stack">
+        <span className="ribbon">天気</span>
+        <div className="switch-row">
+          <div>
+            <p>天気を自動で記録する</p>
+            <p className="muted small">位置情報からその日の天気と、できごとの時刻の天気を入れます（Open-Meteo）。位置はおおよそ1km単位に丸めて、この端末にだけ保存します。</p>
+          </div>
+          <button
+            className="switch"
+            role="switch"
+            aria-checked={weatherOn}
+            aria-label="天気を自動で記録する"
+            onClick={() => {
+              setWeatherEnabled(!weatherOn)
+              setWeatherOn(!weatherOn)
+            }}
+          />
+        </div>
       </section>
       <section className="card stack">
         <span className="ribbon yellow">その他</span>

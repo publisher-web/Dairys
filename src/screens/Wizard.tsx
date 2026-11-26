@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { applyDiary, formatAmount, mergeExternalEntries, parseDiary, sortEntries, type DiaryUpdate, type Entry } from '../diary/markdown'
+import { applyDiary, mergeExternalEntries, parseDiary, sortEntries, type Entry } from '../diary/markdown'
 import { MOODS, moodFromEmoji } from '../diary/mood'
 import { groupPhotos, preparePhoto, uploadPhoto, type PendingPhoto } from '../diary/photos'
+import { fetchWeather, getPosition, isWeatherEnabled, weatherAt, type WeatherData } from '../diary/weather'
+import { formatYen } from '../lib/money'
+import AmountSheet from '../ui/AmountSheet'
 import { loadDiary, saveDiary, type LoadedDiary } from '../diary/store'
 import { dateLabel, toDateString } from '../lib/date'
 import { Glyph, MoodIcon, TileIcon, WeatherIcon, type TileName } from '../ui/Icon'
 import Picker from '../ui/Picker'
-import { isKnownWeather } from '../ui/weather'
+import { isKnownWeather, WEATHER_LABEL, weatherKind } from '../ui/weather'
 import { linkLabel } from '../vault/refs'
+import { buildUpdate, PENDING_PREFIX, previewPath } from '../wizard/update'
 import { clearDraft, isTouched, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
 
 const STEP_META: Record<StepId, { icon: TileName; title: string; hint: string }> = {
@@ -47,25 +51,7 @@ function resumeDraft(saved: Draft, loaded: LoadedDiary): Draft {
   return { ...saved, entries: [...saved.entries, ...added], baseRev: loaded.rev, baseEntries: loaded.diary.entries }
 }
 
-const PENDING_PREFIX = 'pending:'
-
-function previewPath(p: PendingPhoto): string {
-  return `${PENDING_PREFIX}${p.id}`
-}
-
-function buildUpdate(draft: Draft, loaded: LoadedDiary, photoPath: (p: PendingPhoto) => string = previewPath): DiaryUpdate {
-  const update: DiaryUpdate = {}
-  if (draft.moodTouched && draft.mood !== loaded.diary.mood) update.mood = draft.mood
-  if (draft.oneLinerTouched && draft.oneLiner.trim() !== loaded.diary.oneLiner.trim()) update.oneLiner = draft.oneLiner
-  if (draft.entriesTouched)
-    update.entries = sortEntries(
-      draft.entries.map(({ key: _key, pendingPhotos, ...e }) => {
-        void _key
-        return pendingPhotos && pendingPhotos.length > 0 ? { ...e, photos: [...e.photos, ...pendingPhotos.map(photoPath)], raw: null } : e
-      }),
-    )
-  return update
-}
+type WeatherState = { status: 'off' | 'loading' | 'ok' | 'error'; data: WeatherData | null; message: string | null }
 
 function isEmptyEntry(e: EditableEntry): boolean {
   return !e.raw && e.text.every((t) => !t.trim()) && e.photos.length === 0 && !(e.pendingPhotos?.length ?? 0) && !e.place && e.people.length === 0 && !e.amount && !e.time
@@ -100,6 +86,19 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   const [saveError, setSaveError] = useState<string | null>(null)
   const [photoStatus, setPhotoStatus] = useState<{ done: number; total: number; failed: number } | null>(null)
   const [saveProgress, setSaveProgress] = useState<string | null>(null)
+  const [weather, setWeather] = useState<WeatherState>(() => ({ status: isWeatherEnabled() ? 'loading' : 'off', data: null, message: null }))
+
+  useEffect(() => {
+    if (!isWeatherEnabled() || date > toDateString(new Date())) return
+    let alive = true
+    getPosition()
+      .then((pos) => fetchWeather(date, pos))
+      .then((data) => alive && setWeather({ status: 'ok', data, message: null }))
+      .catch((e: unknown) => alive && setWeather({ status: 'error', data: null, message: errorText(e) }))
+    return () => {
+      alive = false
+    }
+  }, [date])
   const [today] = useState(() => toDateString(new Date()))
   const saveTimer = useRef<number | null>(null)
 
@@ -235,8 +234,8 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
     if (next) update({ step: next })
     else if (delta < 0) onExit()
   }
-  const diaryUpdate = buildUpdate(draft, loaded)
-  const hasChanges = Object.keys(diaryUpdate).length > 0
+  const hasChanges = Object.keys(buildUpdate(draft, loaded)).length > 0
+  const diaryUpdate = buildUpdate(draft, loaded, previewPath, weather.data)
   const saving = phase.kind === 'saving'
 
   const pendingPhotos = draft.entries.flatMap((e) => e.pendingPhotos ?? [])
@@ -255,7 +254,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
         await storeDraft({ ...draft, uploaded })
       }
       setSaveProgress('日記を保存しています…')
-      const result = await saveDiary(loaded, buildUpdate(draft, loaded, (p) => uploaded[p.id]))
+      const result = await saveDiary(loaded, buildUpdate(draft, loaded, (p) => uploaded[p.id], weather.data))
       await clearDraft(date)
       setPhase({ kind: 'done', merged: result.merged })
     } catch (e) {
@@ -342,6 +341,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
                   onDelete={() => updateEntries((list) => list.filter((x) => x.key !== e.key))}
                   onAddPhotos={(files) => addPhotosToEntry(e.key, files)}
                   onRemovePhoto={(id) => removePhoto(e.key, id)}
+                  autoWeather={e.raw || e.weather ? null : weatherAt(weather.data, e.time)}
                 />
               ))}
               <button className="add-button" onClick={() => updateEntries((list) => [...list, blankEntry()])}>
@@ -379,6 +379,8 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
 
           {draft.step === 'confirm' && (hasChanges ? <Summary text={applyDiary(loaded.text, date, diaryUpdate)} date={date} photoBlobs={photoBlobs} /> : <p>まだ何も書かれていません。前の画面に戻って書いてみましょう。</p>)}
 
+          {draft.step === 'confirm' && hasChanges && weather.status === 'loading' && <p className="muted small">天気を取得しています…</p>}
+          {draft.step === 'confirm' && hasChanges && weather.status === 'error' && <p className="muted small">天気は記録しません（{weather.message}）</p>}
           {draft.step === 'confirm' && saveError && <p className="error">{saveError}</p>}
         </div>
       </div>
@@ -407,11 +409,13 @@ function savedPhotoCount(entry: Entry): number {
   return entry.photos.filter((p) => !p.startsWith(PENDING_PREFIX)).length
 }
 
-function EntryChips({ entry, linksEditable = false }: { entry: Entry; linksEditable?: boolean }) {
+function EntryChips({ entry, linksEditable = false, autoWeather = null }: { entry: Entry; linksEditable?: boolean; autoWeather?: string | null }) {
+  const weather = entry.weather ?? autoWeather
   const chips = [
-    entry.weather && isKnownWeather(entry.weather) ? (
-      <span key="w" className="tag plain">
-        <WeatherIcon emoji={entry.weather} size={18} />
+    weather && isKnownWeather(weather) ? (
+      <span key="w" className="tag plain" title={entry.weather ? undefined : '保存時に自動で記録します'}>
+        <WeatherIcon emoji={weather} size={18} />
+        {WEATHER_LABEL[weatherKind(weather)!]}
       </span>
     ) : null,
     entry.place && !linksEditable ? (
@@ -426,10 +430,10 @@ function EntryChips({ entry, linksEditable = false }: { entry: Entry; linksEdita
         {p.alias ?? p.target}
       </span>
     )),
-    entry.amount ? (
-      <span key="a" className="tag plain">
+    entry.amount && !linksEditable ? (
+      <span key="a" className={`tag ${entry.amount > 0 ? 'mint' : 'cream'}`}>
         <Glyph name="yen" size={15} />
-        {formatAmount(entry.amount)}
+        {formatYen(entry.amount)}
       </span>
     ) : null,
     savedPhotoCount(entry) > 0 ? (
@@ -448,11 +452,13 @@ type EntryCardProps = {
   onDelete: () => void
   onAddPhotos: (files: File[]) => void
   onRemovePhoto: (id: string) => void
+  autoWeather: string | null
 }
 
-function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto }: EntryCardProps) {
+function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto, autoWeather }: EntryCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [picker, setPicker] = useState<'people' | 'place' | null>(null)
+  const [amountOpen, setAmountOpen] = useState(false)
 
   return (
     <div className="entry-card">
@@ -517,6 +523,22 @@ function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto }: En
           <Glyph name="people" size={15} />
           {entry.people.length > 0 ? '人を追加' : '一緒にいた人'}
         </button>
+        {entry.amount ? (
+          <span className={`tag removable ${entry.amount > 0 ? 'mint' : 'cream'}`}>
+            <button className="tag-edit" onClick={() => setAmountOpen(true)}>
+              <Glyph name="yen" size={15} />
+              {formatYen(entry.amount)}
+            </button>
+            <button aria-label="金額を外す" onClick={() => onChange({ amount: null })}>
+              <Glyph name="close" size={13} />
+            </button>
+          </span>
+        ) : (
+          <button className="chip-add" onClick={() => setAmountOpen(true)}>
+            <Glyph name="yen" size={15} />
+            金額
+          </button>
+        )}
         <label className="chip-add">
           <Glyph name="photo" size={15} />
           写真
@@ -533,7 +555,17 @@ function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto }: En
           />
         </label>
       </div>
-      <EntryChips entry={entry} linksEditable />
+      <EntryChips entry={entry} linksEditable autoWeather={autoWeather} />
+      {amountOpen && (
+        <AmountSheet
+          amount={entry.amount}
+          onClose={() => setAmountOpen(false)}
+          onDone={(amount) => {
+            onChange({ amount })
+            setAmountOpen(false)
+          }}
+        />
+      )}
       {picker && (
         <Picker
           mode={picker}
@@ -577,8 +609,21 @@ function PhotoStatus({ status }: { status: { done: number; total: number; failed
 function Summary({ text, date, photoBlobs }: { text: string; date: string; photoBlobs: Map<string, Blob> }) {
   const diary = parseDiary(text, date)
   const mood = moodFromEmoji(diary.mood)
+  const amounts = diary.entries.map((e) => e.amount ?? 0).filter((a) => a !== 0)
+  const expense = amounts.filter((a) => a < 0).reduce((a, b) => a + b, 0)
+  const income = amounts.filter((a) => a > 0).reduce((a, b) => a + b, 0)
+  const dayWeather = diary.weather && isKnownWeather(diary.weather) ? diary.weather : null
   return (
     <div className="stack">
+      {dayWeather && (
+        <div className="summary-row">
+          <span className="tag mint">天気</span>
+          <div className="value row">
+            <WeatherIcon emoji={dayWeather} size={24} />
+            {WEATHER_LABEL[weatherKind(dayWeather)!]}
+          </div>
+        </div>
+      )}
       <div className="summary-row">
         <span className="tag mint">気分</span>
         <div className="value row">
@@ -596,6 +641,15 @@ function Summary({ text, date, photoBlobs }: { text: string; date: string; photo
         <span className="tag mint">今日の一言</span>
         <p className="value">{diary.oneLiner || <span className="muted">なし</span>}</p>
       </div>
+      {amounts.length > 0 && (
+        <div className="summary-row">
+          <span className="tag mint">お金</span>
+          <div className="value stack tight">
+            {expense < 0 && <span>{formatYen(expense)}</span>}
+            {income > 0 && <span>{formatYen(income)}</span>}
+          </div>
+        </div>
+      )}
       <div className="divider" />
       <span className="ribbon yellow">できごと</span>
       {diary.entries.length === 0 ? (
