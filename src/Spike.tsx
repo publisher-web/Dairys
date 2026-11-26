@@ -5,7 +5,7 @@ import { logout } from './dropbox/auth'
 
 type Log = { ok: boolean; text: string }
 
-const TEST_FILES = [`${VAULT_ROOT}/${DIARY_FOLDER}/_dairys-test.md`, `${VAULT_ROOT}/${DIARY_FOLDER}/_dairys-テスト.md`]
+const TEST_FILES = [`${VAULT_ROOT}/${DIARY_FOLDER}/dairys-test.md`, `${VAULT_ROOT}/${DIARY_FOLDER}/dairys-テスト.md`]
 
 function testContent(label: string): string {
   return ['---', 'type: dairys-test', `written: "${new Date().toISOString()}"`, '---', '', `- ${label} 日本語テスト ✅`, ''].join('\n')

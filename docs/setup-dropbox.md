@@ -18,8 +18,8 @@
 |---|---|---|---|
 | 1 | iPhone の旧 Vault を OneDrive と同期 | ユーザー | 完了（2026-11-26） |
 | 2 | OneDrive から新 Vault へコピーし、掃除する（下記） | Claude | 完了（2026-11-26、`vault-migration-log.md`） |
-| 3 | PC の Obsidian で新 Vault を開き、Remotely Save を Dropbox に接続して同期する。**暗号化パスワードは設定しない** | ユーザー（GUI 操作は Claude が補助） | — |
-| 4 | Dropbox の Web 画面で `/Apps/remotely-save/Diary/` ができていることを確認 | ユーザー / Claude | — |
+| 3 | PC の Obsidian で新 Vault を開き、Remotely Save を Dropbox に接続して同期する。**暗号化パスワードは設定しない** | Claude（desktop-control）＋ユーザー（Dropbox ログイン） | 完了（2026-11-26） |
+| 4 | Dropbox に `/Apps/remotely-save/Diary/` ができていることを確認 | Claude | 完了。2回目の同期計画が「equal 489件 / folder_existed_both 37件」で全件アップロード済み |
 | 5 | iPhone の Obsidian で空の Vault「Diary」を作り、コミュニティプラグインを有効化 → Remotely Save を入れて Dropbox に接続 → 同期 | ユーザー | — |
 | 6 | iPhone でプラグインと設定が反映されているか確認。`.obsidian` が同期されない場合は入れ直す [推測] | ユーザー | — |
 
@@ -40,3 +40,19 @@
    - **Allow public clients (Implicit Grant & PKCE)**: Allow
    - **App key** を Claude に伝える（公開されても問題ない値。App secret は不要）
 3. 「Permissions」タブで `files.metadata.read`、`files.content.read`、`files.content.write` にチェックして「Submit」
+
+## 新 Vault の Remotely Save 設定（PC, 2026-11-26）
+
+| 項目 | 値 | 理由・注意 |
+|---|---|---|
+| Remote Service | Dropbox | 同期先は `/Apps/remotely-save/Diary`（画面表示で確認） |
+| Encryption Password | 空 | Web アプリから平文で読み書きするため |
+| Sync Config Dir | **Enable** | 旧 OneDrive 側に `.obsidian` があった＝以前も有効だった。iPhone にプラグイン・設定を配るため |
+| Sync _ Files Or Folders | Disable（既定） | **`_` で始まるファイル・フォルダは同期されない**。Web アプリが作るファイル名は `_` で始めないこと |
+| その他 | 既定 | 自動同期は未設定（手動）。削除・変更が 50% を超える同期は中止される保護あり |
+
+### ハマりどころ
+
+- 初回確認画面（"HUGE updates on the sync algorithm"）で2つのチェック＋Agree が必要
+- 初回は「Failed to sync」が2回出たが、3回目で完了した。原因のエラーメッセージは取得できていない [不明]。再発したら同期をやり直す
+- `Remotely Save: export sync plans (latest 1)` で同期計画を `_debug_remotely_save/` に書き出せる（`_` 始まりなので同期されない）
