@@ -9,9 +9,11 @@
 - ~~ブロッカー2~~: 個人 MS アカウントではアプリ登録ができない → **Dropbox に変更すると決定**（decisions #11）
 - Step 1 の検証ページを実装済み（`src/Spike.tsx`、`src/dropbox/`）。App key が空のため未実行
 - 移行方式を「新 Vault『Diary』を作って移す」に変更（decisions #12, #13）。手順2（コピーと掃除）完了 → `docs/vault-migration-log.md`
+- PC の新 Vault「Diary」→ Dropbox `/Apps/remotely-save/Diary` への初回同期完了（`setup-dropbox.md` 手順3・4）
 - **ユーザー作業待ち**:
-  - `setup-dropbox.md` の手順3～6（新 Vault を Obsidian で開いて Remotely Save を Dropbox に接続。desktop-control で補助してよいと許可あり。Dropbox のログインはユーザー本人が行う）
-  - Dropbox 開発者アプリの登録 → App key を Claude に伝える
+  - `setup-dropbox.md` の手順5・6（iPhone で空の Vault「Diary」を作り、Remotely Save を入れて Dropbox 同期）
+  - Dropbox 開発者アプリの登録 → App key を Claude に伝える（desktop-control で代行も可）
+  - 不要フォルダ `C:\Users\User3\Documents\Obsidian\Diary\_debug_remotely_save` の削除（Claude からは安全チェックで削除できなかった。同期対象外なので放置でも害はない）
 - push 権限追加済み・push 済み。GitHub Pages デプロイ成功（https://publisher-web.github.io/Dairys/ 200）
 - 新 Vault の `app.json` 設定を復元済み。Obsidian の `obsidian.json` に Diary を登録済み（元ファイル: `%APPDATA%\obsidian\obsidian.json.bak-dairys`）
 - **次の一手**: App key を `src/config.ts` に設定 → push → iPhone で検証ページの 1～3 を実行 → Obsidian に同期されるか確認 → 結果を `docs/spike-result.md` に記録
