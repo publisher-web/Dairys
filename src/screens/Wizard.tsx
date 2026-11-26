@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { applyDiary, formatAmount, mergeExternalEntries, sortEntries, type DiaryUpdate, type Entry } from '../diary/markdown'
+import { applyDiary, formatAmount, mergeExternalEntries, parseDiary, sortEntries, type DiaryUpdate, type Entry } from '../diary/markdown'
+import { MOODS, moodFromEmoji } from '../diary/mood'
 import { loadDiary, saveDiary, type LoadedDiary } from '../diary/store'
 import { dateLabel, toDateString } from '../lib/date'
-import { clearDraft, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
+import { Glyph, MoodIcon, TileIcon, WeatherIcon, type TileName } from '../ui/Icon'
+import { isKnownWeather } from '../ui/weather'
+import { clearDraft, isTouched, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
 
-const MOODS = ['😆', '😃', '🙂', '😐', '🙁']
-
-const STEP_META: Record<StepId, { emoji: string; title: string; hint: string }> = {
-  entries: { emoji: '🕒', title: 'できごと', hint: '今日あったことを、ひとつずつ。なくても大丈夫' },
-  mood: { emoji: '🌈', title: 'きぶん', hint: '今日はどんな日だった？' },
-  oneLiner: { emoji: '📝', title: '今日の一言', hint: '1日をひとことで。音声入力でもOK' },
-  confirm: { emoji: '📔', title: 'かくにん', hint: 'Obsidian ではこう見えるよ' },
+const STEP_META: Record<StepId, { icon: TileName; title: string; hint: string }> = {
+  entries: { icon: 'clock', title: 'できごと', hint: '今日あったことを1つずつ書きましょう。なければそのまま次へ進めます。' },
+  mood: { icon: 'smile', title: '気分', hint: '今日はどんな1日でしたか？' },
+  oneLiner: { icon: 'bubble', title: '今日の一言', hint: '1日をひとことで。音声入力も使えます。' },
+  confirm: { icon: 'clipboard', title: '確認', hint: 'この内容で保存します。' },
 }
 
 type Phase = { kind: 'loading' } | { kind: 'resume'; loaded: LoadedDiary; draft: Draft } | { kind: 'editing'; loaded: LoadedDiary } | { kind: 'saving'; loaded: LoadedDiary } | { kind: 'done'; merged: number } | { kind: 'error'; message: string }
@@ -66,7 +67,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
     Promise.all([loadDiary(date), loadDraft(date)])
       .then(([loaded, saved]) => {
         if (!alive) return
-        if (saved && (saved.moodTouched || saved.oneLinerTouched || saved.entriesTouched)) setPhase({ kind: 'resume', loaded, draft: saved })
+        if (isTouched(saved)) setPhase({ kind: 'resume', loaded, draft: saved! })
         else {
           setDraft(freshDraft(loaded))
           setPhase({ kind: 'editing', loaded })
@@ -79,7 +80,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   }, [date])
 
   useEffect(() => {
-    if (!draft || phase.kind !== 'editing') return
+    if (!draft || phase.kind !== 'editing' || !isTouched(draft)) return
     if (saveTimer.current) window.clearTimeout(saveTimer.current)
     saveTimer.current = window.setTimeout(() => storeDraft(draft), 400)
     return () => {
@@ -90,56 +91,70 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
   const updateEntries = (fn: (entries: EditableEntry[]) => EditableEntry[]) => setDraft((d) => (d ? { ...d, entries: fn(d.entries), entriesTouched: true } : d))
 
-  if (phase.kind === 'loading') return <Centered emoji="🍃" text="日記をひらいています…" />
+  if (phase.kind === 'loading')
+    return (
+      <div className="hero">
+        <TileIcon name="leaf" size={64} className="float" />
+        <p className="muted">日記を読み込んでいます…</p>
+      </div>
+    )
+
   if (phase.kind === 'error')
     return (
       <section className="card stack">
+        <span className="ribbon yellow">読み込めませんでした</span>
         <p className="error">{phase.message}</p>
-        <button className="btn ghost" onClick={onExit}>
-          ホームへ
+        <button className="btn secondary" onClick={onExit}>
+          ホームに戻る
         </button>
       </section>
     )
+
   if (phase.kind === 'resume')
     return (
       <section className="card stack">
-        <h2>✏️ 書きかけがあるよ</h2>
-        <p className="muted">{new Date(phase.draft.savedAt).toLocaleString('ja-JP')} の下書き</p>
+        <div className="hero">
+          <TileIcon name="quill" size={64} />
+          <p className="hero-title">書きかけの下書きがあります</p>
+          <p className="muted small">{new Date(phase.draft.savedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} に保存</p>
+        </div>
         <button
-          className="btn"
+          className="btn primary"
           onClick={() => {
             setDraft(resumeDraft(phase.draft, phase.loaded))
             setPhase({ kind: 'editing', loaded: phase.loaded })
           }}
         >
-          つづきから
+          続きから書く
         </button>
         <button
-          className="btn ghost"
+          className="btn secondary"
           onClick={() => {
             clearDraft(date)
             setDraft(freshDraft(phase.loaded))
             setPhase({ kind: 'editing', loaded: phase.loaded })
           }}
         >
-          さいしょから
+          最初から書く
         </button>
       </section>
     )
+
   if (phase.kind === 'done')
     return (
-      <section className="card hero stack">
-        <span className="hero-emoji" aria-hidden="true">
-          🎉
-        </span>
-        <p className="hero-title">かけたね！</p>
-        <p className="muted">Obsidian で同期すると見られるよ</p>
-        {phase.merged > 0 && <p className="muted">Obsidian で増えていたできごと {phase.merged} 件も、いっしょに残したよ</p>}
-        <button className="btn" onClick={onExit}>
-          ホームへ
+      <section className="card stack">
+        <div className="hero">
+          <TileIcon name="stamp" size={88} className="float" />
+          <p className="hero-title">保存しました</p>
+          <p className="muted">Obsidian で同期すると反映されます。</p>
+          {phase.merged > 0 && <p className="muted small">Obsidian 側で追加されていたできごと {phase.merged} 件も残してあります。</p>}
+        </div>
+        <button className="btn primary" onClick={onExit}>
+          ホームに戻る
         </button>
       </section>
     )
+
   if (!draft) return null
 
   const loaded = phase.loaded
@@ -152,6 +167,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   }
   const diaryUpdate = buildUpdate(draft, loaded)
   const hasChanges = Object.keys(diaryUpdate).length > 0
+  const saving = phase.kind === 'saving'
 
   const save = async () => {
     setPhase({ kind: 'saving', loaded })
@@ -163,87 +179,98 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
     } catch (e) {
       await storeDraft(draft)
       setPhase({ kind: 'editing', loaded })
-      setSaveError(`保存できなかったよ：${errorText(e)}。下書きは残してあるので、もう一度ためしてね`)
+      setSaveError(`保存できませんでした（${errorText(e)}）。下書きは残っているので、もう一度お試しください。`)
     }
   }
 
   return (
     <div className="stack">
-      <div className="wizard-head">
-        <p className="muted">{dateLabel(date, today)}</p>
-        <div className="dots" aria-label={`${stepIndex + 1} / ${STEPS.length}`}>
-          {STEPS.map((s, i) => (
-            <span key={s} className={i < stepIndex ? 'dot past' : i === stepIndex ? 'dot now' : 'dot'} />
-          ))}
+      <div className="panel">
+        <div className="band">
+          <div className="band-title">
+            <TileIcon name={meta.icon} size={40} />
+            <div className="grow">
+              <p className="name">{meta.title}</p>
+              <p className="small">
+                {dateLabel(date, today)}・{stepIndex + 1} / {STEPS.length}
+              </p>
+            </div>
+          </div>
+          <div className="progress" aria-hidden="true">
+            {STEPS.map((s, i) => (
+              <span key={s} className={i < stepIndex ? 'done' : i === stepIndex ? 'now' : ''} />
+            ))}
+          </div>
+        </div>
+
+        <div className="panel-body">
+          <p className="muted">{meta.hint}</p>
+
+          {draft.step === 'entries' && (
+            <div className="stack">
+              {draft.entries.map((e) => (
+                <EntryCard
+                  key={e.key}
+                  entry={e}
+                  onChange={(patch) => updateEntries((list) => list.map((x) => (x.key === e.key ? { ...x, ...patch, raw: null } : x)))}
+                  onDelete={() => updateEntries((list) => list.filter((x) => x.key !== e.key))}
+                />
+              ))}
+              <button
+                className="add-button"
+                onClick={() => updateEntries((list) => [...list, { key: newKey(), time: null, weather: null, place: null, people: [], amount: null, text: [], photos: [], raw: null }])}
+              >
+                <Glyph name="plus" />
+                できごとを追加
+              </button>
+            </div>
+          )}
+
+          {draft.step === 'mood' && (
+            <div className="mood-grid">
+              {MOODS.map((m) => {
+                const on = moodFromEmoji(draft.mood)?.id === m.id
+                return (
+                  <button
+                    key={m.id}
+                    className={`mood ${on ? 'on' : ''}`}
+                    aria-pressed={on}
+                    onClick={() => {
+                      update({ mood: m.emoji, moodTouched: true })
+                      window.setTimeout(() => setDraft((d) => (d && d.step === 'mood' ? { ...d, step: 'oneLiner' } : d)), 320)
+                    }}
+                  >
+                    <MoodIcon id={m.id} />
+                    {m.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {draft.step === 'oneLiner' && (
+            <textarea className="field lined" rows={5} placeholder="今日をひとことで" value={draft.oneLiner} onChange={(e) => update({ oneLiner: e.target.value, oneLinerTouched: true })} />
+          )}
+
+          {draft.step === 'confirm' && (hasChanges ? <Summary text={applyDiary(loaded.text, date, diaryUpdate)} date={date} /> : <p>まだ何も書かれていません。前の画面に戻って書いてみましょう。</p>)}
+
+          {draft.step === 'confirm' && saveError && <p className="error">{saveError}</p>}
         </div>
       </div>
 
-      <section className="card stack">
-        <h2>
-          {meta.emoji} {meta.title}
-        </h2>
-        <p className="muted">{meta.hint}</p>
-
-        {draft.step === 'entries' && (
-          <div className="stack">
-            {draft.entries.map((e) => (
-              <EntryCard
-                key={e.key}
-                entry={e}
-                onChange={(patch) => updateEntries((list) => list.map((x) => (x.key === e.key ? { ...x, ...patch, raw: null } : x)))}
-                onDelete={() => updateEntries((list) => list.filter((x) => x.key !== e.key))}
-              />
-            ))}
-            <button
-              className="btn ghost"
-              onClick={() => updateEntries((list) => [...list, { key: newKey(), time: null, weather: null, place: null, people: [], amount: null, text: [], photos: [], raw: null }])}
-            >
-              ＋ できごとを追加
-            </button>
-          </div>
-        )}
-
-        {draft.step === 'mood' && (
-          <div className="mood-grid">
-            {MOODS.map((m) => (
-              <button
-                key={m}
-                className={`mood ${draft.mood === m ? 'on' : ''}`}
-                aria-pressed={draft.mood === m}
-                onClick={() => {
-                  update({ mood: m, moodTouched: true })
-                  window.setTimeout(() => setDraft((d) => (d && d.step === 'mood' ? { ...d, step: 'oneLiner' } : d)), 280)
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {draft.step === 'oneLiner' && (
-          <textarea className="field" rows={5} placeholder="今日をひとことで…" value={draft.oneLiner} onChange={(e) => update({ oneLiner: e.target.value, oneLinerTouched: true })} />
-        )}
-
-        {draft.step === 'confirm' && (
-          <div className="stack">
-            {hasChanges ? <pre className="preview">{applyDiary(loaded.text, date, diaryUpdate)}</pre> : <p>まだなにも書いてないよ。もどって書いてみよう</p>}
-            {saveError && <p className="error">{saveError}</p>}
-          </div>
-        )}
-      </section>
-
       <div className="nav-row">
-        <button className="btn ghost" onClick={() => go(-1)} disabled={phase.kind === 'saving'}>
-          {stepIndex === 0 ? 'やめる' : 'もどる'}
+        <button className="btn secondary" onClick={() => go(-1)} disabled={saving}>
+          {stepIndex === 0 ? '閉じる' : '戻る'}
         </button>
         {draft.step === 'confirm' ? (
-          <button className="btn" onClick={save} disabled={!hasChanges || phase.kind === 'saving'}>
-            {phase.kind === 'saving' ? 'ほぞん中…' : '💾 ほぞん'}
+          <button className="btn primary" onClick={save} disabled={!hasChanges || saving}>
+            <Glyph name="check" />
+            {saving ? '保存しています…' : '保存する'}
           </button>
         ) : (
-          <button className="btn" onClick={() => go(1)}>
-            {draft.step === 'mood' && !draft.mood ? 'スキップ' : 'つぎへ'}
+          <button className="btn primary" onClick={() => go(1)}>
+            {draft.step === 'mood' && !draft.mood ? 'スキップ' : '次へ'}
+            <Glyph name="chevronRight" />
           </button>
         )}
       </div>
@@ -251,59 +278,111 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   )
 }
 
+function EntryChips({ entry }: { entry: Entry }) {
+  const chips = [
+    entry.weather && isKnownWeather(entry.weather) ? (
+      <span key="w" className="tag plain">
+        <WeatherIcon emoji={entry.weather} size={18} />
+      </span>
+    ) : null,
+    entry.place ? (
+      <span key="p" className="tag plain">
+        <Glyph name="pin" size={15} />
+        {entry.place.alias ?? entry.place.target}
+      </span>
+    ) : null,
+    ...entry.people.map((p, i) => (
+      <span key={`h${i}`} className="tag plain">
+        <Glyph name="people" size={15} />
+        {p.alias ?? p.target}
+      </span>
+    )),
+    entry.amount ? (
+      <span key="a" className="tag plain">
+        <Glyph name="yen" size={15} />
+        {formatAmount(entry.amount)}
+      </span>
+    ) : null,
+    entry.photos.length > 0 ? (
+      <span key="ph" className="tag plain">
+        <Glyph name="photo" size={15} />
+        {entry.photos.length}枚
+      </span>
+    ) : null,
+  ].filter(Boolean)
+  return chips.length > 0 ? <div className="chips">{chips}</div> : null
+}
+
 function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChange: (patch: Partial<Entry>) => void; onDelete: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const chips = [
-    entry.weather,
-    entry.place ? `📍${entry.place.alias ?? entry.place.target}` : null,
-    ...entry.people.map((p) => `👥${p.alias ?? p.target}`),
-    entry.amount ? `💴${formatAmount(entry.amount)}` : null,
-    entry.photos.length > 0 ? `📷×${entry.photos.length}` : null,
-  ].filter((c): c is string => !!c)
 
   return (
     <div className="entry-card">
       <div className="row between">
-        <label className="time-field">
-          🕒
-          <input type="time" value={entry.time ?? ''} onChange={(e) => onChange({ time: e.target.value || null })} />
+        <label className="time-chip">
+          <Glyph name="clock" size={16} />
+          <input type="time" aria-label="時刻" value={entry.time ?? ''} onChange={(e) => onChange({ time: e.target.value || null })} />
         </label>
         {confirmDelete ? (
-          <span className="row">
+          <span className="confirm-delete">
             <button className="mini danger" onClick={onDelete}>
-              けす
+              削除
             </button>
             <button className="mini" onClick={() => setConfirmDelete(false)}>
               やめる
             </button>
           </span>
         ) : (
-          <button className="mini" aria-label="けす" onClick={() => setConfirmDelete(true)}>
-            🗑️
+          <button className="icon-btn" aria-label="このできごとを削除" onClick={() => setConfirmDelete(true)}>
+            <Glyph name="trash" />
           </button>
         )}
       </div>
-      <textarea className="field" rows={2} placeholder="なにがあった？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
-      {chips.length > 0 && (
-        <div className="chips">
-          {chips.map((c, i) => (
-            <span key={i} className="chip">
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
+      <textarea className="field" rows={2} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
+      <EntryChips entry={entry} />
     </div>
   )
 }
 
-function Centered({ emoji, text }: { emoji: string; text: string }) {
+function Summary({ text, date }: { text: string; date: string }) {
+  const diary = parseDiary(text, date)
+  const mood = moodFromEmoji(diary.mood)
   return (
-    <section className="card hero">
-      <span className="hero-emoji" aria-hidden="true">
-        {emoji}
-      </span>
-      <p className="muted">{text}</p>
-    </section>
+    <div className="stack">
+      <div className="summary-row">
+        <span className="tag mint">気分</span>
+        <div className="value row">
+          {mood ? (
+            <>
+              <MoodIcon id={mood.id} size={30} />
+              {mood.label}
+            </>
+          ) : (
+            <span className="muted">未選択</span>
+          )}
+        </div>
+      </div>
+      <div className="summary-row">
+        <span className="tag mint">今日の一言</span>
+        <p className="value">{diary.oneLiner || <span className="muted">なし</span>}</p>
+      </div>
+      <div className="divider" />
+      <span className="ribbon yellow">できごと</span>
+      {diary.entries.length === 0 ? (
+        <p className="muted">なし</p>
+      ) : (
+        <div className="timeline">
+          {diary.entries.map((e, i) => (
+            <div key={i} className="timeline-item">
+              <span className="tag cream">{e.time ?? '－'}</span>
+              <div className="stack tight">
+                {e.text.length > 0 && <p className="value">{e.text.join('\n')}</p>}
+                <EntryChips entry={e} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

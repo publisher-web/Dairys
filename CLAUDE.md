@@ -6,7 +6,7 @@
 
 1. `docs/plan.md` — 作業計画・現在地・次の一手・未決事項
 2. `docs/decisions.md` — 決定事項のログ（覆す前に必ず確認）
-3. 実装中は `docs/requirements.md`（確定した要件）と `docs/mvp-plan.md`（マイルストーン）
+3. 実装中は `docs/requirements.md`（確定した要件）、`docs/mvp-plan.md`（マイルストーン）、**`docs/design.md`（デザインの決まり。UI に絵文字禁止・自作 SVG アイコン・配色）**
 4. 必要に応じて `docs/spike-result.md`（技術検証の結果と注意点）、`docs/setup-dropbox.md`（同期設定・Dropbox アプリ）、`docs/vault-migration-log.md`（Vault 移行の記録）、`docs/analysis-current-state.md`（旧運用の分析）、`docs/tech-research.md`（技術調査）、`docs/handoff-2026-11-26.md`（claude.ai からの引き継ぎ原文）
 
 ## メモの運用（重要）

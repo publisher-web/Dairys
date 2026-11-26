@@ -21,6 +21,10 @@ export type Draft = {
   savedAt: number
 }
 
+export function isTouched(draft: Draft | undefined | null): boolean {
+  return !!draft && (draft.moodTouched || draft.oneLinerTouched || draft.entriesTouched)
+}
+
 const key = (date: string) => `draft:${date}`
 
 export async function loadDraft(date: string): Promise<Draft | undefined> {

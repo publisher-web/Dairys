@@ -24,10 +24,14 @@ export function defaultDiaryDate(now: Date): string {
 }
 
 export function dateLabel(s: string, today: string): string {
-  const base = fromDateString(s).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })
-  if (s === today) return `今日 ${base}`
-  if (s === addDays(today, -1)) return `きのう ${base}`
-  return base
+  const sameYear = s.slice(0, 4) === today.slice(0, 4)
+  return fromDateString(s).toLocaleDateString('ja-JP', sameYear ? { month: 'long', day: 'numeric', weekday: 'short' } : { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
+}
+
+export function relativeDayName(s: string, today: string): string | null {
+  if (s === today) return '今日'
+  if (s === addDays(today, -1)) return '昨日'
+  return null
 }
 
 export function streakDays(written: Set<string>, today: string): number {

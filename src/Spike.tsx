@@ -14,7 +14,7 @@ function testPaths(root: string): string[] {
 }
 
 function testContent(label: string): string {
-  return ['---', 'type: dairys-test', `written: "${new Date().toISOString()}"`, '---', '', `- ${label} 日本語テスト ✅`, ''].join('\n')
+  return ['---', 'type: dairys-test', `written: "${new Date().toISOString()}"`, '---', '', `- ${label} 日本語テスト`, ''].join('\n')
 }
 
 export default function Spike({ onLogout }: { onLogout: () => void }) {
@@ -84,11 +84,11 @@ export default function Spike({ onLogout }: { onLogout: () => void }) {
 
   return (
     <section className="card stack">
-      <h2>🧪 技術検証（Step 1）</h2>
+      <span className="ribbon">Step 1 の検証</span>
       <div className="buttons">
-        <button className="btn ghost" disabled={busy} onClick={checkVault}>1. Vault を確認</button>
-        <button className="btn ghost" disabled={busy} onClick={writeTest}>2. テストファイルを書き込む</button>
-        <button className="btn ghost" disabled={busy} onClick={lockTest}>3. 競合検出を確認</button>
+        <button className="btn secondary" disabled={busy} onClick={checkVault}>1. Vault を確認</button>
+        <button className="btn secondary" disabled={busy} onClick={writeTest}>2. テストファイルを書き込む</button>
+        <button className="btn secondary" disabled={busy} onClick={lockTest}>3. 競合検出を確認</button>
         <button
           className="btn danger"
           onClick={() => {

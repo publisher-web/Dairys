@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, dateLabel, defaultDiaryDate, streakDays } from './date'
+import { addDays, dateLabel, defaultDiaryDate, relativeDayName, streakDays } from './date'
 
 describe('date helpers', () => {
   it('adds days across months', () => {
@@ -13,9 +13,15 @@ describe('date helpers', () => {
     expect(defaultDiaryDate(new Date(2026, 10, 27, 23, 59))).toBe('2026-11-27')
   })
 
-  it('labels today and yesterday', () => {
-    expect(dateLabel('2026-11-27', '2026-11-27').startsWith('今日')).toBe(true)
-    expect(dateLabel('2026-11-26', '2026-11-27').startsWith('きのう')).toBe(true)
+  it('names today and yesterday', () => {
+    expect(relativeDayName('2026-11-27', '2026-11-27')).toBe('今日')
+    expect(relativeDayName('2026-11-26', '2026-11-27')).toBe('昨日')
+    expect(relativeDayName('2026-11-20', '2026-11-27')).toBeNull()
+  })
+
+  it('shows the year only for other years', () => {
+    expect(dateLabel('2026-11-27', '2026-11-27')).not.toContain('2026')
+    expect(dateLabel('2001-01-01', '2026-11-27')).toContain('2001')
   })
 })
 

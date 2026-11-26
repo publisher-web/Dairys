@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
+import type { VaultState } from '../App'
 import { writtenDates } from '../diary/store'
-import { resolveVaultRoot } from '../dropbox/vault'
-import { addDays, dateLabel, defaultDiaryDate, streakDays, toDateString } from '../lib/date'
-import { loadDraft } from '../wizard/draft'
+import { addDays, dateLabel, defaultDiaryDate, fromDateString, relativeDayName, streakDays, toDateString } from '../lib/date'
+import { Glyph, TileIcon, type TileName } from '../ui/Icon'
+import { isTouched, loadDraft } from '../wizard/draft'
 
-type VaultState = { kind: 'wait' } | { kind: 'ok' } | { kind: 'ng'; message: string }
-
-function greeting(hour: number): { emoji: string; text: string } {
-  if (hour < 4) return { emoji: '🌙', text: 'よふかしさん、おつかれさま' }
-  if (hour < 11) return { emoji: '🌤️', text: 'おはよう' }
-  if (hour < 17) return { emoji: '☀️', text: 'こんにちは' }
-  return { emoji: '🌙', text: 'こんばんは' }
+function greeting(hour: number): { icon: TileName; text: string } {
+  if (hour < 4) return { icon: 'moon', text: '夜ふかしですね' }
+  if (hour < 11) return { icon: 'leaf', text: 'おはようございます' }
+  if (hour < 17) return { icon: 'leaf', text: 'こんにちは' }
+  return { icon: 'moon', text: 'こんばんは' }
 }
 
 function dateFromUrl(today: string): string | null {
@@ -18,87 +17,97 @@ function dateFromUrl(today: string): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : null
 }
 
-export default function Home({ onStart }: { onStart: (date: string) => void }) {
+function shortDate(s: string): string {
+  const d = fromDateString(s)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+export default function Home({ vault, onStart }: { vault: VaultState; onStart: (date: string) => void }) {
   const [now] = useState(() => new Date())
   const today = toDateString(now)
+  const yesterday = addDays(today, -1)
   const [date, setDate] = useState(() => dateFromUrl(toDateString(now)) ?? defaultDiaryDate(now))
-  const [vault, setVault] = useState<VaultState>({ kind: 'wait' })
   const [written, setWritten] = useState<Set<string> | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
   const hello = greeting(now.getHours())
 
   useEffect(() => {
-    resolveVaultRoot()
-      .then(() => {
-        setVault({ kind: 'ok' })
-        return writtenDates(addDays(today, -400))
-      })
+    if (vault.kind !== 'ok') return
+    writtenDates(addDays(today, -400))
       .then(setWritten)
-      .catch((e: unknown) => setVault({ kind: 'ng', message: e instanceof Error ? e.message : String(e) }))
-  }, [today])
+      .catch(() => setWritten(new Set()))
+  }, [vault.kind, today])
 
   useEffect(() => {
-    loadDraft(date).then((d) => setHasDraft(!!d))
+    loadDraft(date).then((d) => setHasDraft(isTouched(d)))
   }, [date])
 
-  const yesterday = addDays(today, -1)
   const streak = written ? streakDays(written, today) : null
   const isDone = written?.has(date) ?? false
   const missedYesterday = written !== null && date === today && !written.has(yesterday)
+  const relative = relativeDayName(date, today)
+  const isOther = date !== today && date !== yesterday
 
   return (
     <div className="stack">
-      <section className="card hero">
-        <span className="hero-emoji" aria-hidden="true">
-          {hello.emoji}
-        </span>
+      <div className="hero">
+        <TileIcon name={hello.icon} size={64} className="float" />
         <p className="hero-title">{hello.text}</p>
-        <p className="muted">{dateLabel(today, today)}</p>
         {streak !== null && (
-          <p className="streak">
-            🔥 <b>{streak}</b> 日れんぞく
-          </p>
+          <span className="tag cream">
+            <TileIcon name="flame" size={20} />
+            {streak > 0 ? `${streak}日連続で記録中` : '今日から記録を始めましょう'}
+          </span>
         )}
-      </section>
+      </div>
 
       {missedYesterday && (
-        <button className="banner" onClick={() => setDate(yesterday)}>
-          <span aria-hidden="true">🍃</span> きのうがまだだよ。きのうを書く？
-        </button>
+        <div className="notice">
+          <TileIcon name="quill" size={36} />
+          <p className="grow">昨日の日記がまだです</p>
+          <button className="btn soft" onClick={() => setDate(yesterday)}>
+            昨日を書く
+          </button>
+        </div>
       )}
 
       <section className="card stack">
-        <div className="row between">
-          <h2>📅 {dateLabel(date, today)}</h2>
-          <span className={`pill ${isDone ? 'done' : ''}`}>{written === null ? '…' : isDone ? 'かけた ✅' : 'まだ ✏️'}</span>
+        <span className="ribbon">日記を書く</span>
+        <div className="date-heading">
+          <TileIcon name="calendar" size={48} />
+          <div className="grow">
+            {relative && <p className="muted small">{relative}</p>}
+            <p className="date-text">{dateLabel(date, today)}</p>
+          </div>
+          {written !== null && <span className={`tag ${isDone ? 'mint' : 'cream'}`}>{isDone ? '記入済み' : '未記入'}</span>}
         </div>
-        <div className="segmented">
-          <button className={date === yesterday ? 'on' : ''} onClick={() => setDate(yesterday)}>
-            きのう
+        <div className="date-tiles">
+          <button className={`date-tile ${date === yesterday ? 'on' : ''}`} onClick={() => setDate(yesterday)}>
+            <span>昨日</span>
+            <span className="small">{shortDate(yesterday)}</span>
           </button>
-          <button className={date === today ? 'on' : ''} onClick={() => setDate(today)}>
-            今日
+          <button className={`date-tile ${date === today ? 'on' : ''}`} onClick={() => setDate(today)}>
+            <span>今日</span>
+            <span className="small">{shortDate(today)}</span>
           </button>
-          <label className={date !== today && date !== yesterday ? 'on' : ''}>
-            ほかの日
-            <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          <label className={`date-tile ${isOther ? 'on' : ''}`}>
+            <span>日付を選ぶ</span>
+            <span className="small">{isOther ? shortDate(date) : '－'}</span>
+            <input type="date" value={date} max={today} aria-label="日付を選ぶ" onChange={(e) => e.target.value && setDate(e.target.value)} />
           </label>
         </div>
-        <button className="btn" disabled={vault.kind !== 'ok'} onClick={() => onStart(date)}>
-          {hasDraft ? '✏️ つづきを書く' : isDone ? '📝 書きたす・なおす' : '🌙 ふりかえりをはじめる'}
+        <button className="btn primary" disabled={vault.kind !== 'ok'} onClick={() => onStart(date)}>
+          <Glyph name="pencil" />
+          {hasDraft ? '続きを書く' : isDone ? '書き足す・直す' : 'ふりかえりを始める'}
         </button>
       </section>
 
-      <section className="card">
-        <div className="status">
-          <span className={`status-dot ${vault.kind}`} />
-          <div>
-            {vault.kind === 'wait' && <p>保管庫をさがしています…</p>}
-            {vault.kind === 'ok' && <p>保管庫とつながっています 🌿</p>}
-            {vault.kind === 'ng' && <p className="error">{vault.message}</p>}
-          </div>
-        </div>
-      </section>
+      <div className="status-line">
+        <span className={`dot ${vault.kind}`} />
+        {vault.kind === 'wait' && '保管庫を確認しています…'}
+        {vault.kind === 'ok' && '保管庫に接続しています'}
+        {vault.kind === 'ng' && <span className="error">{vault.message}</span>}
+      </div>
     </div>
   )
 }

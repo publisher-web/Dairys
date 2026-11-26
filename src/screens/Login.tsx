@@ -1,18 +1,18 @@
 import { startLogin } from '../dropbox/auth'
+import { TileIcon } from '../ui/Icon'
 
 export default function Login({ error }: { error: string | null }) {
   return (
     <div className="stack">
-      <section className="card hero">
-        <span className="hero-emoji" aria-hidden="true">
-          📔
-        </span>
-        <p className="hero-title">まいにちの ふりかえり</p>
-        <p className="muted">夜にちょっとだけ、今日をのこそう</p>
-      </section>
+      <div className="hero">
+        <TileIcon name="quill" size={84} className="float" />
+        <p className="hero-title">夜に、今日を少しだけ</p>
+        <p className="muted">写真とできごとを並べるだけで、日記が続きます。</p>
+      </div>
       <section className="card stack">
-        <p>日記は Dropbox の Obsidian 保管庫にとどきます。はじめにログインしてね。</p>
-        <button className="btn sky" onClick={() => startLogin()}>
+        <span className="ribbon">はじめに</span>
+        <p>日記は Dropbox 上の Obsidian 保管庫に保存されます。最初に Dropbox でログインしてください。</p>
+        <button className="btn primary" onClick={() => startLogin()}>
           Dropbox でログイン
         </button>
         {error && <p className="error">{error}</p>}
