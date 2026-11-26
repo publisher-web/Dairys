@@ -4,7 +4,9 @@ import { MOODS, moodFromEmoji } from '../diary/mood'
 import { loadDiary, saveDiary, type LoadedDiary } from '../diary/store'
 import { dateLabel, toDateString } from '../lib/date'
 import { Glyph, MoodIcon, TileIcon, WeatherIcon, type TileName } from '../ui/Icon'
+import Picker from '../ui/Picker'
 import { isKnownWeather } from '../ui/weather'
+import { linkLabel } from '../vault/refs'
 import { clearDraft, isTouched, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
 
 const STEP_META: Record<StepId, { icon: TileName; title: string; hint: string }> = {
@@ -278,20 +280,20 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   )
 }
 
-function EntryChips({ entry }: { entry: Entry }) {
+function EntryChips({ entry, linksEditable = false }: { entry: Entry; linksEditable?: boolean }) {
   const chips = [
     entry.weather && isKnownWeather(entry.weather) ? (
       <span key="w" className="tag plain">
         <WeatherIcon emoji={entry.weather} size={18} />
       </span>
     ) : null,
-    entry.place ? (
+    entry.place && !linksEditable ? (
       <span key="p" className="tag plain">
         <Glyph name="pin" size={15} />
         {entry.place.alias ?? entry.place.target}
       </span>
     ) : null,
-    ...entry.people.map((p, i) => (
+    ...(linksEditable ? [] : entry.people).map((p, i) => (
       <span key={`h${i}`} className="tag plain">
         <Glyph name="people" size={15} />
         {p.alias ?? p.target}
@@ -315,6 +317,7 @@ function EntryChips({ entry }: { entry: Entry }) {
 
 function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChange: (patch: Partial<Entry>) => void; onDelete: () => void }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [picker, setPicker] = useState<'people' | 'place' | null>(null)
 
   return (
     <div className="entry-card">
@@ -339,7 +342,48 @@ function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChan
         )}
       </div>
       <textarea className="field" rows={2} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
-      <EntryChips entry={entry} />
+      <div className="entry-links">
+        {entry.place ? (
+          <span className="tag mint removable">
+            <Glyph name="pin" size={15} />
+            {linkLabel(entry.place)}
+            <button aria-label="場所を外す" onClick={() => onChange({ place: null })}>
+              <Glyph name="close" size={13} />
+            </button>
+          </span>
+        ) : (
+          <button className="chip-add" onClick={() => setPicker('place')}>
+            <Glyph name="pin" size={15} />
+            場所
+          </button>
+        )}
+        {entry.people.map((p) => (
+          <span key={p.target} className="tag mint removable">
+            <Glyph name="people" size={15} />
+            {linkLabel(p)}
+            <button aria-label={`${linkLabel(p)}を外す`} onClick={() => onChange({ people: entry.people.filter((x) => x.target !== p.target) })}>
+              <Glyph name="close" size={13} />
+            </button>
+          </span>
+        ))}
+        <button className="chip-add" onClick={() => setPicker('people')}>
+          <Glyph name="people" size={15} />
+          {entry.people.length > 0 ? '人を追加' : '一緒にいた人'}
+        </button>
+      </div>
+      <EntryChips entry={entry} linksEditable />
+      {picker && (
+        <Picker
+          mode={picker}
+          selected={picker === 'people' ? entry.people : entry.place ? [entry.place] : []}
+          onClose={() => setPicker(null)}
+          onDone={(refs) => {
+            if (picker === 'people') onChange({ people: refs })
+            else onChange({ place: refs[0] ?? null })
+            setPicker(null)
+          }}
+        />
+      )}
     </div>
   )
 }

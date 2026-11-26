@@ -5,15 +5,17 @@ import { resolveVaultRoot } from './dropbox/vault'
 import Home from './screens/Home'
 import Login from './screens/Login'
 import Settings from './screens/Settings'
+import Unresolved from './screens/Unresolved'
 import Wizard from './screens/Wizard'
 import { Glyph, TileIcon } from './ui/Icon'
 import StatusBar from './ui/StatusBar'
+import { loadDirectory } from './vault/directory'
 
-type Screen = { kind: 'home' } | { kind: 'settings' } | { kind: 'spike' } | { kind: 'wizard'; date: string }
+type Screen = { kind: 'home' } | { kind: 'settings' } | { kind: 'spike' } | { kind: 'unresolved' } | { kind: 'wizard'; date: string }
 
 export type VaultState = { kind: 'wait' } | { kind: 'ok' } | { kind: 'ng'; message: string }
 
-const TITLES: Record<Screen['kind'], string> = { home: 'Dairys', settings: '設定', spike: '技術検証', wizard: 'ふりかえり' }
+const TITLES: Record<Screen['kind'], string> = { home: 'Dairys', settings: '設定', spike: '技術検証', unresolved: '未登録の名前', wizard: 'ふりかえり' }
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn())
@@ -33,7 +35,10 @@ export default function App() {
   useEffect(() => {
     if (!loggedIn) return
     resolveVaultRoot()
-      .then(() => setVault({ kind: 'ok' }))
+      .then(() => {
+        setVault({ kind: 'ok' })
+        loadDirectory()
+      })
       .catch((e: unknown) => setVault({ kind: 'ng', message: e instanceof Error ? e.message : String(e) }))
   }, [loggedIn])
 
@@ -48,7 +53,7 @@ export default function App() {
     setScreen({ kind: 'home' })
   }
 
-  const showBack = loggedIn && (screen.kind === 'settings' || screen.kind === 'spike')
+  const showBack = loggedIn && (screen.kind === 'settings' || screen.kind === 'spike' || screen.kind === 'unresolved')
   const showSettings = loggedIn && screen.kind === 'home'
 
   return (
@@ -57,7 +62,7 @@ export default function App() {
       <header className="titlebar">
         <div>
           {showBack && (
-            <button className="round-button" aria-label="戻る" onClick={() => (screen.kind === 'spike' ? setScreen({ kind: 'settings' }) : toHome())}>
+            <button className="round-button" aria-label="戻る" onClick={() => (screen.kind === 'spike' || screen.kind === 'unresolved' ? setScreen({ kind: 'settings' }) : toHome())}>
               <Glyph name="chevronLeft" />
             </button>
           )}
@@ -77,7 +82,9 @@ export default function App() {
         ) : !loggedIn ? (
           <Login error={error} />
         ) : screen.kind === 'settings' ? (
-          <Settings onLogout={toLogin} onOpenSpike={() => setScreen({ kind: 'spike' })} />
+          <Settings onLogout={toLogin} onOpenSpike={() => setScreen({ kind: 'spike' })} onOpenUnresolved={() => setScreen({ kind: 'unresolved' })} />
+        ) : screen.kind === 'unresolved' ? (
+          <Unresolved />
         ) : screen.kind === 'spike' ? (
           <Spike onLogout={toLogin} />
         ) : screen.kind === 'wizard' ? (

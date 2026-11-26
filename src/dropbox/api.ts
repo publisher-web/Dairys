@@ -7,6 +7,7 @@ export type Entry = {
   '.tag': 'file' | 'folder' | 'deleted'
   name: string
   path_display: string
+  path_lower?: string
   rev?: string
   server_modified?: string
   size?: number
@@ -54,6 +55,17 @@ async function rpc<T>(endpoint: string, body: unknown): Promise<T> {
 
 export async function listFolder(path: string): Promise<Entry[]> {
   const first = await rpc<{ entries: Entry[]; cursor: string; has_more: boolean }>('files/list_folder', { path })
+  const entries = [...first.entries]
+  let page = first
+  while (page.has_more) {
+    page = await rpc('files/list_folder/continue', { cursor: page.cursor })
+    entries.push(...page.entries)
+  }
+  return entries
+}
+
+export async function listFolderRecursive(path: string): Promise<Entry[]> {
+  const first = await rpc<{ entries: Entry[]; cursor: string; has_more: boolean }>('files/list_folder', { path, recursive: true })
   const entries = [...first.entries]
   let page = first
   while (page.has_more) {

@@ -9,7 +9,7 @@ const DOT = '#dccdae'
 
 const SQUIRCLE = 'M24 2.5C39.6 2.5 45.5 8.4 45.5 24S39.6 45.5 24 45.5 2.5 39.6 2.5 24 8.4 2.5 24 2.5Z'
 
-export type TileName = 'calendar' | 'quill' | 'leaf' | 'gear' | 'flame' | 'clock' | 'bubble' | 'smile' | 'clipboard' | 'stamp' | 'cloud' | 'moon'
+export type TileName = 'calendar' | 'quill' | 'leaf' | 'gear' | 'flame' | 'clock' | 'bubble' | 'smile' | 'clipboard' | 'stamp' | 'cloud' | 'moon' | 'people' | 'pin'
 
 const TILE_COLORS: Record<TileName, string> = {
   calendar: '#9fddc0',
@@ -24,6 +24,8 @@ const TILE_COLORS: Record<TileName, string> = {
   stamp: TEAL,
   cloud: '#a9d6ee',
   moon: '#c9c3ea',
+  people: '#ffe08f',
+  pin: '#f7c9a8',
 }
 
 function gearPath(cx: number, cy: number, rOut: number, rIn: number, teeth: number): string {
@@ -132,6 +134,23 @@ const TILE_ART: Record<TileName, ReactNode> = {
       <path d="M20.4 26.4l2.8 2.8 5-5.2" stroke={TEAL} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </>
   ),
+  people: (
+    <>
+      <circle cx="29.4" cy="18.4" r="4.3" fill={TEAL} />
+      <path d="M22.6 34.2a6.8 6.8 0 0 1 13.6 0v1.4H22.6Z" fill={TEAL} />
+      <circle cx="19.2" cy="20.6" r="4.8" fill="#f08a6c" />
+      <path d="M11 36.4a8.2 8.2 0 0 1 16.4 0v.6H11Z" fill="#f08a6c" />
+      <circle cx="17.6" cy="20" r=".9" fill={INK} />
+      <circle cx="21" cy="20" r=".9" fill={INK} />
+    </>
+  ),
+  pin: (
+    <>
+      <ellipse cx="24" cy="38" rx="6" ry="1.6" fill={INK} opacity="0.16" />
+      <path d="M24 37s-9.4-8.4-9.4-15.6a9.4 9.4 0 0 1 18.8 0C33.4 28.6 24 37 24 37Z" fill={PAPER} />
+      <circle cx="24" cy="21.6" r="3.8" fill="#f08a6c" />
+    </>
+  ),
   moon: (
     <>
       <path d="M28.6 12.4a12 12 0 1 0 7.2 18.8 10 10 0 0 1-7.2-18.8Z" fill="#fff1b8" />
@@ -214,13 +233,25 @@ export function MoodIcon({ id, size = 56 }: { id: MoodId; size?: number }) {
   )
 }
 
-export type GlyphName = 'chevronLeft' | 'chevronRight' | 'plus' | 'trash' | 'pin' | 'people' | 'yen' | 'clock' | 'check' | 'logout' | 'refresh' | 'flask' | 'photo' | 'pencil' | 'leaf' | 'close'
+export type GlyphName = 'chevronLeft' | 'chevronRight' | 'plus' | 'trash' | 'pin' | 'people' | 'yen' | 'clock' | 'check' | 'logout' | 'refresh' | 'flask' | 'photo' | 'pencil' | 'leaf' | 'close' | 'search' | 'question'
 
 const GLYPHS: Record<GlyphName, ReactNode> = {
   chevronLeft: <path d="M14.5 5.5 8 12l6.5 6.5" />,
   chevronRight: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
   plus: <path d="M12 5.5v13M5.5 12h13" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  search: (
+    <>
+      <circle cx="10.6" cy="10.6" r="6" />
+      <path d="M15.2 15.2 19.5 19.5" />
+    </>
+  ),
+  question: (
+    <>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M9.7 9.6a2.4 2.4 0 0 1 4.6.9c0 1.6-2.3 2-2.3 3.4M12 16.8v.1" />
+    </>
+  ),
   trash: <path d="M5 7.5h14M9.8 7.5V5.6h4.4v1.9M7 7.5l.9 11.2a1.6 1.6 0 0 0 1.6 1.5h5a1.6 1.6 0 0 0 1.6-1.5L17 7.5" />,
   pin: (
     <>
