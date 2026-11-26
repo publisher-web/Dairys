@@ -45,9 +45,11 @@ const NEW_FORMAT_CRLF = [
   '- 楽しかった',
   '',
   '## 🕒 できごと',
-  '- 12:10 ☀️ 📍[[場所A]] 👥[[姓 名|呼び名]] [[友達]]',
+  '- 12:10 ☀️ 📍[[場所A]]',
+  '  👥[[姓 名|呼び名]] [[友達]]',
   '  みんなでゲームした',
   '  ![[attachments/photo-1.jpg]]',
+  '',
   '- 18:45 📍[[コンビニ]] 💴-1419',
   '  おやつ',
   '',
@@ -180,6 +182,7 @@ describe('applyDiary', () => {
         '## 🕒 できごと',
         '- 09:00 ☀️',
         '  朝ごはん',
+        '',
         '- 夜にのんびり',
         '  ![[attachments/photo-2.jpg]]',
         '',
@@ -187,11 +190,11 @@ describe('applyDiary', () => {
     )
   })
 
-  it('does not leave a blank line after a raw entry that is no longer last', () => {
+  it('separates entries with exactly one blank line', () => {
     const text = ['---', 'type: diary', '---', '', '## 🕒 できごと', '- 20:30', '  夜', ''].join('\n')
     const d = parseDiary(text, '2001-01-01')
     const out = applyDiary(text, '2001-01-01', { entries: [d.entries[0], entry({ photos: ['attachments/p.jpg'] })] })
-    expect(out).toBe(['---', 'type: diary', 'date: "2001-01-01"', '---', '', '## 🕒 できごと', '- 20:30', '  夜', '- ![[attachments/p.jpg]]', ''].join('\n'))
+    expect(out).toBe(['---', 'type: diary', 'date: "2001-01-01"', '---', '', '## 🕒 できごと', '- 20:30', '  夜', '', '- ![[attachments/p.jpg]]', ''].join('\n'))
   })
 
   it('removes transaction when no amounts remain', () => {
@@ -221,10 +224,29 @@ describe('entries', () => {
   })
 
   it('round-trips the canonical format', () => {
-    const lines = ['- 07:05 🌧️ 📍[[駅]] 👥[[姓 名|呼び名]] 💴+3000', '  お小遣い', '  ![[attachments/photo-3.jpg]]']
+    const lines = ['- 07:05 🌧️ 📍[[駅]] 💴+3000', '  👥[[姓 名|呼び名]] [[友達]]', '  お小遣い', '  ![[attachments/photo-3.jpg]]']
     const [e] = parseEntries(lines).entries
     expect(e.amount).toBe(3000)
+    expect(e.people).toEqual([
+      { target: '姓 名', alias: '呼び名' },
+      { target: '友達', alias: null },
+    ])
+    expect(e.text).toEqual(['お小遣い'])
     expect(entryLines({ ...e, raw: null })).toEqual(lines)
+  })
+
+  it('reads the old layout with people on the first line and rewrites it in the new layout', () => {
+    const [e] = parseEntries(['- 17:49 📍[[公園]] 👥[[姓 名|呼び名]] [[友達]]', '  走り込みに行った']).entries
+    expect(e.place).toEqual({ target: '公園', alias: null })
+    expect(e.people).toHaveLength(2)
+    expect(entryLines({ ...e, raw: null })).toEqual(['- 17:49 📍[[公園]]', '  👥[[姓 名|呼び名]] [[友達]]', '  走り込みに行った'])
+  })
+
+  it('puts people first when there is no time or place', () => {
+    expect(entryLines({ ...parseEntries(['- x']).entries[0], text: ['散歩'], people: [{ target: '友達', alias: null }], raw: null })).toEqual(['- 👥[[友達]]', '  散歩'])
+    const [e] = parseEntries(['- 👥[[友達]]', '  散歩']).entries
+    expect(e.people).toEqual([{ target: '友達', alias: null }])
+    expect(e.text).toEqual(['散歩'])
   })
 
   it('pads single-digit hours and parses yen with commas', () => {

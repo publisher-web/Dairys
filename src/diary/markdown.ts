@@ -219,9 +219,22 @@ export function parseEntries(lines: string[]): { prefix: string[]; entries: Entr
     const head = parseEntryHead(stripBullet(raw[0]))
     const text: string[] = []
     const photos: string[] = []
+    const people = [...head.people]
     const take = (value: string) => {
       const v = value.trim()
       if (!v) return
+      if (v.startsWith('👥')) {
+        let rest = v.slice('👥'.length).trimStart()
+        const before = people.length
+        for (let link = parseLink(rest); link; link = parseLink(rest)) {
+          people.push(link.ref)
+          rest = link.rest
+        }
+        if (people.length > before) {
+          if (rest) text.push(rest)
+          return
+        }
+      }
       const photo = PHOTO_RE.exec(v)
       if (photo) photos.push(photo[1])
       else text.push(v)
@@ -230,7 +243,7 @@ export function parseEntries(lines: string[]): { prefix: string[]; entries: Entr
     for (const line of raw.slice(1)) take(dedent(line))
     const { leftover: _leftover, ...meta } = head
     void _leftover
-    return { ...meta, text, photos, raw }
+    return { ...meta, people, text, photos, raw }
   })
   return { prefix, entries }
 }
@@ -240,17 +253,12 @@ export function formatAmount(amount: number): string {
 }
 
 export function entryLines(entry: Entry): string[] {
-  const meta = [
-    entry.time,
-    entry.weather,
-    entry.place ? `📍${formatLink(entry.place)}` : null,
-    entry.people.length > 0 ? `👥${entry.people.map(formatLink).join(' ')}` : null,
-    entry.amount ? `💴${formatAmount(entry.amount)}` : null,
-  ].filter((v): v is string => !!v)
+  const head = [entry.time, entry.weather, entry.place ? `📍${formatLink(entry.place)}` : null, entry.amount ? `💴${formatAmount(entry.amount)}` : null].filter((v): v is string => !!v)
+  const peopleLine = entry.people.length > 0 ? `👥${entry.people.map(formatLink).join(' ')}` : null
   const text = entry.text.map((t) => t.trim()).filter((t) => t.length > 0)
   const photos = entry.photos.map((p) => `![[${p}]]`)
-  const body = [...text, ...photos]
-  if (meta.length > 0) return [`- ${meta.join(' ')}`, ...body.map((b) => `  ${b}`)]
+  const body = [...(peopleLine ? [peopleLine] : []), ...text, ...photos]
+  if (head.length > 0) return [`- ${head.join(' ')}`, ...body.map((b) => `  ${b}`)]
   if (body.length > 0) return [`- ${body[0]}`, ...body.slice(1).map((b) => `  ${b}`)]
   return []
 }
@@ -358,7 +366,8 @@ export function applyDiary(original: string | null, date: string, update: DiaryU
   if (update.entries !== undefined) {
     const section = ensureSection(parts, 'events')
     const prefix = trimBlankEdges(parseEntries(section.lines).prefix)
-    const body = update.entries.flatMap((e) => (e.raw ? trimBlankEdges(e.raw) : entryLines(e)))
+    const blocks = update.entries.map((e) => (e.raw ? trimBlankEdges(e.raw) : entryLines(e))).filter((b) => b.length > 0)
+    const body = blocks.flatMap((b, i) => (i === 0 ? b : ['', ...b]))
     const content = prefix.length > 0 && body.length > 0 ? [...prefix, '', ...body] : [...prefix, ...body]
     section.lines = [...content, ...Array<string>(trailingBlankCount(section.lines)).fill('')]
     const total = transactionTotal(update.entries)

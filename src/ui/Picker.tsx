@@ -81,8 +81,8 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
       return
     }
     setPicked((list) => (list.some((p) => p.target === ref.target) ? list.filter((p) => p.target !== ref.target) : [...list, ref]))
-    setQuery('')
-    inputRef.current?.focus()
+    if (query) setQuery('')
+    inputRef.current?.blur()
   }
 
   const row = (item: Item) => {
@@ -111,22 +111,33 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
           </button>
         </div>
 
-        <label className="search">
+        <div className="search">
           <Glyph name="search" size={18} />
-          <input ref={inputRef} type="text" placeholder="名前・読み・あだ名で探す" value={query} onChange={(e) => setQuery(e.target.value)} enterKeyHint="done" />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="名前・読み・あだ名で探す"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+            }}
+            enterKeyHint="done"
+          />
           {query && (
             <button
               className="search-clear"
               aria-label="検索をクリア"
+              onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
                 setQuery('')
-                inputRef.current?.focus()
+                inputRef.current?.blur()
               }}
             >
               <Glyph name="close" size={14} />
             </button>
           )}
-        </label>
+        </div>
 
         {multi && picked.length > 0 && (
           <div className="chips">
@@ -141,7 +152,7 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
           </div>
         )}
 
-        <div className="sheet-list">
+        <div className="sheet-list" onPointerDown={() => inputRef.current?.blur()}>
           {dir.status === 'loading' && items.length === 0 && (
             <p className="muted small center">
               候補を準備しています（{dir.progress.done} / {dir.progress.total}）
