@@ -96,6 +96,18 @@ export async function downloadText(path: string): Promise<string> {
   return await res.text()
 }
 
+export async function downloadBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${CONTENT_BASE}/files/download`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${await getAccessToken()}`,
+      'Dropbox-API-Arg': headerSafeJson({ path }),
+    },
+  })
+  if (!res.ok) throw new DropboxError('files/download', res.status, await res.text())
+  return await res.blob()
+}
+
 export async function upload(path: string, content: Blob | string, mode: WriteMode): Promise<Entry> {
   const res = await fetch(`${CONTENT_BASE}/files/upload`, {
     method: 'POST',

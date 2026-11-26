@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Glyph } from './Icon'
 
 function format(now: Date) {
   return {
@@ -8,7 +7,7 @@ function format(now: Date) {
   }
 }
 
-export default function StatusBar({ connected }: { connected: boolean | null }) {
+export default function StatusBar() {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -21,9 +20,7 @@ export default function StatusBar({ connected }: { connected: boolean | null }) 
     <div className="statusbar">
       <span>{date}</span>
       <span className="time">{time}</span>
-      <span className={`right ${connected ? 'ok' : ''}`} title={connected ? '保管庫に接続中' : '未接続'}>
-        <Glyph name="leaf" size={16} />
-      </span>
+      <span />
     </div>
   )
 }

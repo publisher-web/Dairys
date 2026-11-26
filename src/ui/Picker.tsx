@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { LinkRef } from '../diary/markdown'
 import type { Person, Place, PlaceKind } from '../vault/directory'
 import { rankByUsage } from '../vault/links'
@@ -6,6 +6,7 @@ import { linkLabel, linkOf } from '../vault/refs'
 import { displayName, hasExactName, matches } from '../vault/search'
 import { useDirectory } from '../vault/useDirectory'
 import { Glyph, TileIcon } from './Icon'
+import Sheet from './Sheet'
 
 type Item = Person | Place
 
@@ -60,14 +61,6 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
   const multi = mode === 'people'
   const title = mode === 'people' ? '一緒にいた人' : '場所'
 
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [])
-
   const recent = useMemo(() => rankByUsage(items, dir.usage).slice(0, 8), [items, dir.usage])
   const all = useMemo(() => [...items].sort(collate), [items])
   const results = useMemo(() => (query.trim() ? all.filter((i) => matches(i, query)) : all), [all, query])
@@ -101,8 +94,7 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
   }
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+    <Sheet label={title} onClose={onClose}>
         <div className="sheet-head">
           <TileIcon name={mode === 'people' ? 'people' : 'pin'} size={36} />
           <p className="sheet-title grow">{title}</p>
@@ -190,7 +182,6 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
             決定（{picked.length}人）
           </button>
         )}
-      </div>
-    </div>
+    </Sheet>
   )
 }

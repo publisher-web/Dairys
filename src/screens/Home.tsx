@@ -49,16 +49,10 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
   const isOther = date !== today && date !== yesterday
 
   return (
-    <div className="stack">
+    <div className="stack home">
       <div className="hero">
         <TileIcon name={hello.icon} size={64} className="float" />
         <p className="hero-title">{hello.text}</p>
-        {streak !== null && (
-          <span className="tag cream">
-            <TileIcon name="flame" size={20} />
-            {streak > 0 ? `${streak}日連続で記録中` : '今日から記録を始めましょう'}
-          </span>
-        )}
       </div>
 
       {missedYesterday && (
@@ -102,7 +96,16 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
         </button>
       </section>
 
-      <div className="status-line">
+      {streak !== null && (
+        <div className="streak-line">
+          <span className="tag cream">
+            <TileIcon name="flame" size={20} />
+            {streak > 0 ? `${streak}日連続で記録中` : '今日から記録を始めましょう'}
+          </span>
+        </div>
+      )}
+
+      <div className="status-line footer">
         <span className={`dot ${vault.kind}`} />
         {vault.kind === 'wait' && '保管庫を確認しています…'}
         {vault.kind === 'ok' && '保管庫に接続しています'}

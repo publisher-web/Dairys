@@ -58,7 +58,7 @@ export default function App() {
 
   return (
     <div className="device">
-      <StatusBar connected={loggedIn ? vault.kind === 'ok' : null} />
+      <StatusBar />
       <header className="titlebar">
         <div>
           {showBack && (
@@ -92,7 +92,6 @@ export default function App() {
         ) : (
           <Home key={homeKey} vault={vault} onStart={(date) => setScreen({ kind: 'wizard', date })} />
         )}
-        <p className="footnote">Dairys</p>
       </main>
     </div>
   )

@@ -8,6 +8,7 @@ import AmountSheet from '../ui/AmountSheet'
 import { loadDiary, saveDiary, type LoadedDiary } from '../diary/store'
 import { dateLabel, toDateString } from '../lib/date'
 import { Glyph, MoodIcon, TileIcon, WeatherIcon, type TileName } from '../ui/Icon'
+import PhotoViewer from '../ui/PhotoViewer'
 import Picker from '../ui/Picker'
 import { isKnownWeather, WEATHER_LABEL, weatherKind } from '../ui/weather'
 import { linkLabel } from '../vault/refs'
@@ -374,7 +375,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
           )}
 
           {draft.step === 'oneLiner' && (
-            <textarea className="field lined" rows={5} placeholder="今日をひとことで" value={draft.oneLiner} onChange={(e) => update({ oneLiner: e.target.value, oneLinerTouched: true })} />
+            <textarea className="field lined" rows={8} placeholder="今日をひとことで" value={draft.oneLiner} onChange={(e) => update({ oneLiner: e.target.value, oneLinerTouched: true })} />
           )}
 
           {draft.step === 'confirm' && (hasChanges ? <Summary text={applyDiary(loaded.text, date, diaryUpdate)} date={date} photoBlobs={photoBlobs} /> : <p>まだ何も書かれていません。前の画面に戻って書いてみましょう。</p>)}
@@ -402,6 +403,20 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
         )}
       </div>
     </div>
+  )
+}
+
+function SavedPhotosChip({ paths }: { paths: string[] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button className="tag plain tag-button" onClick={() => setOpen(true)}>
+        <Glyph name="photo" size={15} />
+        保存済みの写真 {paths.length}枚
+        <Glyph name="chevronRight" size={14} />
+      </button>
+      {open && <PhotoViewer paths={paths} onClose={() => setOpen(false)} />}
+    </>
   )
 }
 
@@ -436,12 +451,7 @@ function EntryChips({ entry, linksEditable = false, autoWeather = null }: { entr
         {formatYen(entry.amount)}
       </span>
     ) : null,
-    savedPhotoCount(entry) > 0 ? (
-      <span key="ph" className="tag plain">
-        <Glyph name="photo" size={15} />
-        保存済みの写真 {savedPhotoCount(entry)}枚
-      </span>
-    ) : null,
+    savedPhotoCount(entry) > 0 ? <SavedPhotosChip key="ph" paths={entry.photos.filter((p) => !p.startsWith(PENDING_PREFIX))} /> : null,
   ].filter(Boolean)
   return chips.length > 0 ? <div className="chips">{chips}</div> : null
 }
@@ -494,7 +504,7 @@ function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto, auto
           ))}
         </div>
       )}
-      <textarea className="field" rows={2} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
+      <textarea className="field entry-text" rows={4} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
       <div className="entry-links">
         {entry.place ? (
           <span className="tag mint removable">

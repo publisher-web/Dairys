@@ -1,5 +1,5 @@
 import { REMOTELY_SAVE_FOLDER, VAULT_NAME } from '../config'
-import { downloadText, getMetadata, listFolder, upload, type Entry, type WriteMode } from './api'
+import { downloadBlob, downloadText, getMetadata, listFolder, upload, type Entry, type WriteMode } from './api'
 import { assertWritablePath, diaryPath } from './guard'
 
 const ROOT_KEY = 'dairys.vaultRoot'
@@ -54,4 +54,10 @@ export async function writeVaultFile(path: string, content: Blob | string, mode:
 
 export async function readDiaryText(date: string): Promise<VaultText | null> {
   return readVaultText(diaryPath(await resolveVaultRoot(), date))
+}
+
+export async function readVaultBlob(relativePath: string): Promise<Blob> {
+  const clean = relativePath.replace(/^\/+/, '')
+  if (clean.split('/').some((seg) => seg === '..')) throw new Error(`invalid path: ${relativePath}`)
+  return downloadBlob(`${await resolveVaultRoot()}/${clean}`)
 }

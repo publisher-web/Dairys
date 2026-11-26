@@ -837,7 +837,10 @@ p {
 
 .sheet-backdrop {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100dvh;
   z-index: 50;
   display: flex;
   align-items: flex-end;
@@ -849,7 +852,6 @@ p {
 .sheet {
   width: 100%;
   max-width: 430px;
-  max-height: 86dvh;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -867,7 +869,6 @@ p {
 
   .sheet {
     border-radius: 32px;
-    max-height: 80dvh;
   }
 }
 
@@ -1303,4 +1304,129 @@ button:focus-visible,
 .chip-add:focus-within {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
+}
+
+.entry-text {
+  min-height: 118px;
+}
+
+.lined {
+  min-height: 286px;
+}
+
+.streak-line {
+  display: flex;
+  justify-content: center;
+}
+
+.home {
+  flex: 1;
+}
+
+.status-line.footer {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.tag-button {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.photo-viewer {
+  max-width: 520px;
+}
+
+.viewer-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.viewer-item {
+  margin: 0;
+}
+
+.viewer-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+  box-shadow: 0 0 0 1.5px var(--line);
+}
+
+.viewer-placeholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  background: var(--line);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.viewer-placeholder.loading {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.tag,
+.chip-add,
+.tag-button,
+.mini,
+.btn,
+.toggle button,
+.ribbon {
+  line-height: 1.2;
+  text-box: trim-both cap alphabetic;
+}
+
+.tag,
+.tag-button {
+  min-height: 28px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.tag.removable {
+  min-height: 30px;
+}
+
+.chip-add {
+  min-height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.mini {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggle button {
+  min-height: 38px;
+}
+
+.ribbon {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.photo-time {
+  min-height: 22px;
+}
+
+.tag .tag-edit,
+.time-chip {
+  line-height: 1.2;
 }
