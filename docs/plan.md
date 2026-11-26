@@ -2,21 +2,15 @@
 
 ## 現在地（2026-11-26 更新）
 
-- 旧運用の分析が完了（`analysis-current-state.md`）
-- 構成方針が決定（`decisions.md` #1～#10）。技術スタックは Vite＋React＋TypeScript、公開先は GitHub Pages
-- 雛形を作成し commit 済み（`80b4502`）。Pages は Actions ビルドで有効化済み
-- **ブロッカー1**: push が拒否された。publisher-web の gh トークンに `workflow` スコープがない。ユーザーが `gh auth switch -u publisher-web` → `gh auth refresh -h github.com -s workflow` → `gh auth switch -u Ktaniguchi1207` を実行する必要がある
-- ~~ブロッカー2~~: 個人 MS アカウントではアプリ登録ができない → **Dropbox に変更すると決定**（decisions #11）
-- Step 1 の検証ページを実装済み（`src/Spike.tsx`、`src/dropbox/`）。App key が空のため未実行
-- 移行方式を「新 Vault『Diary』を作って移す」に変更（decisions #12, #13）。手順2（コピーと掃除）完了 → `docs/vault-migration-log.md`
-- PC の新 Vault「Diary」→ Dropbox `/Apps/remotely-save/Diary` への初回同期完了（`setup-dropbox.md` 手順3・4）
-- **ユーザー作業待ち**:
-  - `setup-dropbox.md` の手順5・6（iPhone で空の Vault「Diary」を作り、Remotely Save を入れて Dropbox 同期）
-  - Dropbox 開発者アプリの登録 → App key を Claude に伝える（desktop-control で代行も可）
-  - 不要フォルダ `C:\Users\User3\Documents\Obsidian\Diary\_debug_remotely_save` の削除（Claude からは安全チェックで削除できなかった。同期対象外なので放置でも害はない）
-- push 権限追加済み・push 済み。GitHub Pages デプロイ成功（https://publisher-web.github.io/Dairys/ 200）
-- 新 Vault の `app.json` 設定を復元済み。Obsidian の `obsidian.json` に Diary を登録済み（元ファイル: `%APPDATA%\obsidian\obsidian.json.bak-dairys`）
-- **次の一手**: App key を `src/config.ts` に設定 → push → iPhone で検証ページの 1～3 を実行 → Obsidian に同期されるか確認 → 結果を `docs/spike-result.md` に記録
+- 旧運用の分析が完了（`analysis-current-state.md`）。決定事項は `decisions.md` #1～#15
+- 新 Vault「Diary」へ移行済み。PC・iPhone とも Dropbox（`/アプリ/remotely-save/Diary`）と同期できている（`setup-dropbox.md`、`vault-migration-log.md`）
+- push 権限追加済み。GitHub Pages: https://publisher-web.github.io/Dairys/
+- Dropbox 開発者アプリ登録済み。**Step 1（技術検証）完了・成立**（`spike-result.md`）
+- **次の一手**: Step 2（要件定義 `docs/requirements.md`）。日記フォーマット、入力項目（必須／自動取得／任意）、画面フローを決めてユーザーの承認を得る
+- 残タスク（小）:
+  - iPhone Safari で検証ページのログインと書き込みを確認（任意）
+  - Vault のテストファイル `40_Diary/dairys-test.md`・`dairys-テスト.md` を削除
+  - `C:\Users\User3\Documents\Obsidian\Diary\_debug_remotely_save` を削除（ユーザー作業。同期対象外なので放置でも害はない）
 
 ## 構成案
 
@@ -25,9 +19,9 @@ iPhone Safari（Webアプリ / ホーム画面に追加）
    │  Dropbox でログイン（OAuth2 Auth Code + PKCE, token_access_type=offline）
    ▼
 Dropbox API（files/upload, mode=update+rev で楽観ロック）
-   │  /Apps/remotely-save/Main/40_Diary/YYYY-MM-DD.md
+   │  /アプリ/remotely-save/Diary/40_Diary/YYYY-MM-DD.md（Apps フォルダ名はローカライズされる）
    ▼
-Dropbox（Apps/remotely-save/Main）
+Dropbox（/アプリ/remotely-save/Diary）
    │  Remotely Save の次回同期で取り込み
    ▼
 Obsidian（iPhone / Windows）で閲覧・振り返り
@@ -37,7 +31,7 @@ Obsidian（iPhone / Windows）で閲覧・振り返り
 
 | Step | 内容 | 成果物 | 状態 |
 |---|---|---|---|
-| 1 | 技術検証：Dropbox アプリ登録 → PKCE ログイン → `40_Diary` にテストファイル書き込み（日本語パス・rev 競合検出も）→ Obsidian に同期されるか確認 | 検証ページ、`docs/spike-result.md` | 実装済み・ユーザー作業待ち |
+| 1 | 技術検証：Dropbox アプリ登録 → PKCE ログイン → `40_Diary` にテストファイル書き込み（日本語パス・rev 競合検出も）→ Obsidian に同期されるか確認 | 検証ページ、`docs/spike-result.md` | **完了（成立）** |
 | 2 | 要件定義：日記フォーマット、入力項目（必須／自動取得／任意）、画面フロー | `docs/requirements.md` | 未着手 |
 | 3 | MVP 実装：今日の日記に出来事を追記（時刻・天気は自動、ムード1タップ、人物・場所は候補選択、写真） | Web アプリ | 未着手 |
 | 4 | 公開・1～2週間試用 → 改善点洗い出し | 試用メモ | 未着手 |

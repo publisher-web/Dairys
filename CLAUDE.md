@@ -1,12 +1,12 @@
 # Dairys — Claude Code 向けプロジェクト指示
 
-毎日の日記を無理なく続けるための入力 Web アプリ。入力した内容を OneDrive 上の Obsidian Vault に Markdown として書き込む。
+毎日の日記を無理なく続けるための入力 Web アプリ。入力した内容を Dropbox 上の Obsidian Vault に Markdown として書き込み、Remotely Save で各端末の Obsidian に同期する。
 
 ## セッション開始時に読むもの
 
 1. `docs/plan.md` — 作業計画・現在地・次の一手・未決事項
 2. `docs/decisions.md` — 決定事項のログ（覆す前に必ず確認）
-3. 必要に応じて `docs/analysis-current-state.md`（旧運用の分析）、`docs/tech-research.md`（技術調査）、`docs/handoff-2026-11-26.md`（claude.ai からの引き継ぎ原文）
+3. 必要に応じて `docs/spike-result.md`（技術検証の結果と注意点）、`docs/setup-dropbox.md`（同期設定・Dropbox アプリ）、`docs/vault-migration-log.md`（Vault 移行の記録）、`docs/analysis-current-state.md`（旧運用の分析）、`docs/tech-research.md`（技術調査）、`docs/handoff-2026-11-26.md`（claude.ai からの引き継ぎ原文）
 
 ## メモの運用（重要）
 
@@ -37,8 +37,11 @@
 | ローカル | `C:\Users\User3\Dairys` |
 | GitHub アカウント | `publisher-web` を使う。gh の既定（active）アカウントは `Ktaniguchi1207` のままなので、gh を使うときは `GH_TOKEN=$(gh auth token --user publisher-web)` を付ける。remote URL は `https://publisher-web@github.com/...` に設定済み |
 | 旧リポジトリ | https://github.com/Ktaniguchi1207/Dairys （README のみ。使わない） |
-| Obsidian Vault（リモート） | 移行中: OneDrive `C:\Users\User3\OneDrive\アプリ\remotely-save\Main` → Dropbox `/Apps/remotely-save/Main`（decisions #11、`docs/setup-dropbox.md`） |
-| Obsidian Vault（PC ローカル） | `C:\Users\User3\Documents\ObsidianBackUp\Main`（Remotely Save で同期。2026-11 時点ではリモートより古い） |
+| Obsidian Vault（Dropbox） | `/アプリ/remotely-save/Diary`。Apps フォルダ名はアカウントの言語でローカライズされる（Remotely Save の画面表示は `/Apps/...` だが実体は `/アプリ/...`）。Web アプリは `src/dropbox/vault.ts` で動的に探す |
+| Obsidian Vault（PC ローカル） | `C:\Users\User3\Documents\Obsidian\Diary`（Remotely Save で Dropbox と同期。`_` 始まりのファイルは同期されない） |
+| 旧 Vault（バックアップ・触らない） | OneDrive `C:\Users\User3\OneDrive\アプリ\remotely-save\Main`、PC `C:\Users\User3\Documents\ObsidianBackUp\Main`、iPhone の `Main` |
+| Dropbox 開発者アプリ | `Dairys-diary`、App key `h4hrp6tm6h78tf6`（`src/config.ts`）。管理画面 https://www.dropbox.com/developers/apps |
+| デスクトップ操作 | `desktop-control` スキル（`dsk`）の使用許可あり。パスワード入力・ログインはユーザー本人が行う |
 | 技術スタック | Vite＋React＋TypeScript、oxlint。`npm run build` / `npm run lint` |
 | Git 作成者 | リポジトリのローカル設定で `publisher-web <359089006+publisher-web@users.noreply.github.com>`（グローバルの Gmail アドレスを公開しないため） |
 | push | publisher-web のトークンに `workflow` スコープ追加済み（2026-11-26）。push は `git -c credential.helper= -c credential.helper='!f() { echo username=publisher-web; echo password=$GH_TOKEN; }; f' push` に `GH_TOKEN=$(gh auth token --user publisher-web)` を付けて実行 |
