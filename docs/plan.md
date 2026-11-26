@@ -6,7 +6,8 @@
 - 新 Vault「Diary」へ移行済み。PC・iPhone とも Dropbox（`/アプリ/remotely-save/Diary`）と同期できている（`setup-dropbox.md`、`vault-migration-log.md`）
 - push 権限追加済み。GitHub Pages: https://publisher-web.github.io/Dairys/
 - Dropbox 開発者アプリ登録済み。**Step 1（技術検証）完了・成立**（`spike-result.md`）
-- **次の一手**: Step 2（要件定義 `docs/requirements.md`）。日記フォーマット、入力項目（必須／自動取得／任意）、画面フローを決めてユーザーの承認を得る
+- Step 2（要件定義）進行中: `docs/requirements.md` の R1～R4 決定済み（decisions #16～#19）
+- **次の一手**: R5（ムードの絵文字）・R6（ウィザードの順番と中身）・R7（金額入力）をユーザーに確認 → 要件確定 → Step 3（MVP 設計・実装）の計画を提示
 - 残タスク（小）:
   - iPhone Safari で検証ページのログインと書き込みを確認（任意）
   - Vault のテストファイル `40_Diary/dairys-test.md`・`dairys-テスト.md` を削除
@@ -32,7 +33,7 @@ Obsidian（iPhone / Windows）で閲覧・振り返り
 | Step | 内容 | 成果物 | 状態 |
 |---|---|---|---|
 | 1 | 技術検証：Dropbox アプリ登録 → PKCE ログイン → `40_Diary` にテストファイル書き込み（日本語パス・rev 競合検出も）→ Obsidian に同期されるか確認 | 検証ページ、`docs/spike-result.md` | **完了（成立）** |
-| 2 | 要件定義：日記フォーマット、入力項目（必須／自動取得／任意）、画面フロー | `docs/requirements.md` | 未着手 |
+| 2 | 要件定義：日記フォーマット、入力項目（必須／自動取得／任意）、画面フロー | `docs/requirements.md` | 進行中（R1～R4 決定） |
 | 3 | MVP 実装：今日の日記に出来事を追記（時刻・天気は自動、ムード1タップ、人物・場所は候補選択、写真） | Web アプリ | 未着手 |
 | 4 | 公開・1～2週間試用 → 改善点洗い出し | 試用メモ | 未着手 |
 
