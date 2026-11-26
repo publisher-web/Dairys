@@ -3,9 +3,14 @@
 ## 現在地（2026-11-26 更新）
 
 - 旧運用の分析が完了（`analysis-current-state.md`）
-- 構成方針が決定（`decisions.md` #1～#7）
-- リポジトリを作成・clone 済み。メモ類を整備した
-- **次の一手**: 下の「未回答の質問」に回答をもらい、承認後に Step 1（技術検証）に着手する
+- 構成方針が決定（`decisions.md` #1～#10）。技術スタックは Vite＋React＋TypeScript、公開先は GitHub Pages
+- 雛形を作成し commit 済み（`80b4502`）。Pages は Actions ビルドで有効化済み
+- **ブロッカー1**: push が拒否された。publisher-web の gh トークンに `workflow` スコープがない。ユーザーが `gh auth switch -u publisher-web` → `gh auth refresh -h github.com -s workflow` → `gh auth switch -u Ktaniguchi1207` を実行する必要がある
+- **ブロッカー2**: 個人 MS アカウントだけではアプリ登録ができない（`tech-research.md`）。認証方式を次から選んでもらう
+  - A: Azure 無料アカウント（カード必要）でテナントを作り、OneDrive に書き込む（構成は変わらない）
+  - B: 同期先を Dropbox に変更する（Remotely Save 無料版が対応。開発者登録は無料・カード不要）。decisions #4 を変更
+  - C: Web アプリ → 中継ストレージ → Obsidian 側の自作プラグインが取り込む
+- **次の一手**: ブロッカー1・2の解消後、Step 1（技術検証）の検証ページを作る
 
 ## 構成案
 
