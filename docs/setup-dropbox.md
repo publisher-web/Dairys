@@ -31,6 +31,21 @@
 
 ## Dropbox 開発者アプリの登録（Web アプリ用）
 
+**2026-11-26 Claude が desktop-control で代行して登録済み**
+
+| 項目 | 値 |
+|---|---|
+| App 名 | `Dairys-diary` |
+| App key | `h4hrp6tm6h78tf6`（公開してよい値。`src/config.ts` に設定済み。App secret は使わない） |
+| 権限タイプ | Scoped access / Full Dropbox |
+| Permissions | `files.metadata.read`（必須・既定）、`files.content.read`、`files.content.write` |
+| Redirect URIs | `https://publisher-web.github.io/Dairys/`、`http://localhost:5173/Dairys/` |
+| 公開クライアント（PKCE）を許可 | ON（既定で ON だった） |
+| ステータス | 開発（作成したアカウントのみ利用可。追加ユーザー不要） |
+| 管理画面 | https://www.dropbox.com/developers/apps （Dropbox API 利用規約に同意済み） |
+
+### 登録手順（参考）
+
 1. https://www.dropbox.com/developers/apps を開き「Create app」
    - Choose an API: **Scoped access**
    - Choose the type of access: **Full Dropbox**（`Apps/remotely-save` に書き込むため）
