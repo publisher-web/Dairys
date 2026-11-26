@@ -33,3 +33,49 @@ body {
   margin: 0 auto;
   padding: 16px;
 }
+
+button {
+  font: inherit;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--muted);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.error {
+  color: #dc2626;
+  word-break: break-all;
+}
+
+.logs {
+  padding-left: 1.2em;
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.logs .ng {
+  color: #dc2626;
+}

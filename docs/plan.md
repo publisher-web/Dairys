@@ -6,22 +6,21 @@
 - 構成方針が決定（`decisions.md` #1～#10）。技術スタックは Vite＋React＋TypeScript、公開先は GitHub Pages
 - 雛形を作成し commit 済み（`80b4502`）。Pages は Actions ビルドで有効化済み
 - **ブロッカー1**: push が拒否された。publisher-web の gh トークンに `workflow` スコープがない。ユーザーが `gh auth switch -u publisher-web` → `gh auth refresh -h github.com -s workflow` → `gh auth switch -u Ktaniguchi1207` を実行する必要がある
-- **ブロッカー2**: 個人 MS アカウントだけではアプリ登録ができない（`tech-research.md`）。認証方式を次から選んでもらう
-  - A: Azure 無料アカウント（カード必要）でテナントを作り、OneDrive に書き込む（構成は変わらない）
-  - B: 同期先を Dropbox に変更する（Remotely Save 無料版が対応。開発者登録は無料・カード不要）。decisions #4 を変更
-  - C: Web アプリ → 中継ストレージ → Obsidian 側の自作プラグインが取り込む
-- **次の一手**: ブロッカー1・2の解消後、Step 1（技術検証）の検証ページを作る
+- ~~ブロッカー2~~: 個人 MS アカウントではアプリ登録ができない → **Dropbox に変更すると決定**（decisions #11）
+- Step 1 の検証ページを実装済み（`src/Spike.tsx`、`src/dropbox/`）。App key が空のため未実行
+- **ユーザー作業待ち**: `docs/setup-dropbox.md` の A（Dropbox アプリ登録 → App key を Claude に伝える）、B（Remotely Save を Dropbox に移行）
+- **次の一手**: App key を `src/config.ts` に設定 → push → iPhone で検証ページの 1～3 を実行 → Obsidian に同期されるか確認 → 結果を `docs/spike-result.md` に記録
 
 ## 構成案
 
 ```
 iPhone Safari（Webアプリ / ホーム画面に追加）
-   │  Microsoft アカウントでログイン（MSAL.js, Auth Code + PKCE）
+   │  Dropbox でログイン（OAuth2 Auth Code + PKCE, token_access_type=offline）
    ▼
-Microsoft Graph API
-   │  PUT /me/drive/root:/Apps/remotely-save/Main/40_Diary/YYYY-MM-DD.md:/content
+Dropbox API（files/upload, mode=update+rev で楽観ロック）
+   │  /Apps/remotely-save/Main/40_Diary/YYYY-MM-DD.md
    ▼
-OneDrive（Apps/remotely-save/Main）
+Dropbox（Apps/remotely-save/Main）
    │  Remotely Save の次回同期で取り込み
    ▼
 Obsidian（iPhone / Windows）で閲覧・振り返り
@@ -31,7 +30,7 @@ Obsidian（iPhone / Windows）で閲覧・振り返り
 
 | Step | 内容 | 成果物 | 状態 |
 |---|---|---|---|
-| 1 | 技術検証：Entra アプリ登録 → MSAL ログイン → `40_Diary` にテストファイル書き込み → Obsidian に同期されるか確認 | 最小の検証ページ、`docs/spike-graph-write.md` | 未着手（承認待ち） |
+| 1 | 技術検証：Dropbox アプリ登録 → PKCE ログイン → `40_Diary` にテストファイル書き込み（日本語パス・rev 競合検出も）→ Obsidian に同期されるか確認 | 検証ページ、`docs/spike-result.md` | 実装済み・ユーザー作業待ち |
 | 2 | 要件定義：日記フォーマット、入力項目（必須／自動取得／任意）、画面フロー | `docs/requirements.md` | 未着手 |
 | 3 | MVP 実装：今日の日記に出来事を追記（時刻・天気は自動、ムード1タップ、人物・場所は候補選択、写真） | Web アプリ | 未着手 |
 | 4 | 公開・1～2週間試用 → 改善点洗い出し | 試用メモ | 未着手 |
@@ -42,8 +41,8 @@ Step 1 を先にする理由: リスク #1（アプリ登録可否）・#3（同
 
 | # | リスク | 対策案 |
 |---|---|---|
-| 1 | 個人 Microsoft アカウントで Entra アプリ登録ができない可能性 [不明] | Step 1 の最初に検証。NG なら構成を見直す |
-| 2 | `Files.ReadWrite`（OneDrive 全体）権限が必要 | 書き込み先を `40_Diary` と `attachments` にコードで限定 |
+| 1 | ~~個人 MS アカウントで Entra アプリ登録ができない~~ → 確定したため Dropbox に変更 | 解消 |
+| 2 | Full Dropbox 権限（Dropbox 全体）が必要 | 書き込み先を `40_Diary` と `attachments` にコードで限定 |
 | 3 | Web アプリと Obsidian で同じ日のファイルを同時編集すると Remotely Save が競合・上書きする恐れ | 書き込み直前に最新を読み直して追記。当日分は原則 Web アプリから書く運用 |
 | 4 | Remotely Save の同期まで Obsidian に反映されない | 仕様として受容 |
 

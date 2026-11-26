@@ -24,6 +24,11 @@
 | Remotely Save 無料版 | Dropbox に対応。保存先は `/Apps/remotely-save` | [確証] | [Remotely Save README](https://cdn.jsdelivr.net/gh/remotely-save/remotely-save@master/README.md) |
 | 開発者アプリの登録 | 無料。開発ステータスでも自分のアカウントで使える（最大500ユーザー）。「Full Dropbox」権限を選べば、他アプリのフォルダにも書き込める | [確証] | [DBX developer guide](https://www.dropbox.com/developers/reference/developer-guide) |
 | 認証 | Auth Code + PKCE（SPA 向けとして推奨） | [確証] | 同上 |
+| リフレッシュトークン | 認可 URL に `token_access_type=offline` を付けると `refresh_token` が返る。更新は `/oauth2/token` に `grant_type=refresh_token` で送る。アクセストークンは短命で、有効期限は token 応答に含まれる | [確証] | [Dropbox OAuth guide](https://docs.dropboxapi.com/dropbox-api/docs/oauth) |
+| リフレッシュトークンの有効期限 | ドキュメントに記載なし | [不明] | 同上 |
+| `Dropbox-API-Arg` ヘッダ | 0x7F と非 ASCII 文字は `\uXXXX` でエスケープが必要（日本語のパスで必須） | [確証] | [JSON encoding](https://www.dropbox.com/developers/reference/json-encoding) |
+| 楽観ロック | `files/upload` の mode に `{".tag":"update","update":rev}` を指定し、rev が違えば失敗させる | [一般知識] | Step 1 で検証する |
+| Remotely Save の暗号化 | パスワードを設定するとリモートのファイルが暗号化され、Web アプリから平文で書けなくなる。**暗号化パスワードは設定しないこと** | [推測] | — |
 
 ## 天気
 

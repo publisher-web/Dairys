@@ -37,5 +37,9 @@
 | ローカル | `C:\Users\User3\Dairys` |
 | GitHub アカウント | `publisher-web` を使う。gh の既定（active）アカウントは `Ktaniguchi1207` のままなので、gh を使うときは `GH_TOKEN=$(gh auth token --user publisher-web)` を付ける。remote URL は `https://publisher-web@github.com/...` に設定済み |
 | 旧リポジトリ | https://github.com/Ktaniguchi1207/Dairys （README のみ。使わない） |
-| Obsidian Vault | `C:\Users\User3\OneDrive\アプリ\remotely-save\Main`（Remotely Save 無料版 → OneDrive App Folder） |
+| Obsidian Vault（リモート） | 移行中: OneDrive `C:\Users\User3\OneDrive\アプリ\remotely-save\Main` → Dropbox `/Apps/remotely-save/Main`（decisions #11、`docs/setup-dropbox.md`） |
+| Obsidian Vault（PC ローカル） | `C:\Users\User3\Documents\ObsidianBackUp\Main`（Remotely Save で同期。2026-11 時点ではリモートより古い） |
+| 技術スタック | Vite＋React＋TypeScript、oxlint。`npm run build` / `npm run lint` |
+| Git 作成者 | リポジトリのローカル設定で `publisher-web <359089006+publisher-web@users.noreply.github.com>`（グローバルの Gmail アドレスを公開しないため） |
+| push | publisher-web のトークンに `workflow` スコープが必要。push は `git -c credential.helper= -c credential.helper='!f() { echo username=publisher-web; echo password=$GH_TOKEN; }; f' push` に `GH_TOKEN=$(gh auth token --user publisher-web)` を付けて実行 |
 | 注意 | OneDrive が停止しているとオンライン専用ファイルが読めない（`The cloud file provider is not running`） |

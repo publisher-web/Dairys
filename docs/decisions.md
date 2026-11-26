@@ -14,3 +14,4 @@
 | 8 | 2026-11-26 | Dairys リポジトリ内の Git 操作（commit / push / branch / PR 等）はすべて許可。**それ以外のリポジトリの操作は一切禁止** | ユーザー指示 |
 | 9 | 2026-11-26 | 技術スタックの選定は Claude に一任 → Vite＋React＋TypeScript を採用 | ユーザーは Web 技術に詳しくないため一任。React は情報量が最も多く、MSAL 等の公式サンプルも React 向けが充実 [一般知識] |
 | 10 | 2026-11-26 | 公開先は GitHub Pages（`https://publisher-web.github.io/Dairys/`）。GitHub Actions でデプロイ | ユーザー判断 |
+| 11 | 2026-11-26 | **#4・#6 を変更**: Remotely Save の同期先を OneDrive から **Dropbox** に移す。Web アプリは Dropbox API（PKCE、Full Dropbox 権限）で `/Apps/remotely-save/Main` に直接書き込む。OneDrive 側のデータはバックアップとして残す | 2024年6月以降、個人 MS アカウントだけでは Entra アプリを登録できず、テナント作成にはカードが必要。Dropbox は開発者登録が無料でカード不要、Remotely Save 無料版も対応（`tech-research.md`） |
