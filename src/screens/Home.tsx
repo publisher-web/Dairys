@@ -13,10 +13,15 @@ function greeting(hour: number): { emoji: string; text: string } {
   return { emoji: '🌙', text: 'こんばんは' }
 }
 
+function dateFromUrl(today: string): string | null {
+  const value = new URLSearchParams(window.location.search).get('date')
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : null
+}
+
 export default function Home({ onStart }: { onStart: (date: string) => void }) {
   const [now] = useState(() => new Date())
   const today = toDateString(now)
-  const [date, setDate] = useState(() => defaultDiaryDate(now))
+  const [date, setDate] = useState(() => dateFromUrl(toDateString(now)) ?? defaultDiaryDate(now))
   const [vault, setVault] = useState<VaultState>({ kind: 'wait' })
   const [written, setWritten] = useState<Set<string> | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
