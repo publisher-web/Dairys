@@ -25,3 +25,8 @@
 
 - Vault の `40_Diary/dairys-test.md` と `40_Diary/dairys-テスト.md`（テストファイル）。iPhone で同期されたことを確認したら削除してよい
 - iPhone Safari でのログインと書き込みの確認（ホーム画面に追加した場合の localStorage の持続性も含む）
+
+## CI のハマりどころ（2026-11-26）
+
+- Windows で作った `package-lock.json` には、Linux 用の任意依存（rolldown の wasm 版が使う `@emnapi/core` など）が記録されず、GitHub Actions の `npm ci` が「lock ファイルと同期していない」で失敗した。`npm install --package-lock-only` でも直らない [確証]
+- 対処: CI では `npm ci` ではなく `npm install --no-audit --no-fund` を使う
