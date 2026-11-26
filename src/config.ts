@@ -1,6 +1,6 @@
 export const DROPBOX_APP_KEY = ''
 
-export const VAULT_ROOT = '/Apps/remotely-save/Main'
+export const VAULT_ROOT = '/Apps/remotely-save/Diary'
 
 export const DIARY_FOLDER = '40_Diary'
 

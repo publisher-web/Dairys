@@ -8,7 +8,12 @@
 - **ブロッカー1**: push が拒否された。publisher-web の gh トークンに `workflow` スコープがない。ユーザーが `gh auth switch -u publisher-web` → `gh auth refresh -h github.com -s workflow` → `gh auth switch -u Ktaniguchi1207` を実行する必要がある
 - ~~ブロッカー2~~: 個人 MS アカウントではアプリ登録ができない → **Dropbox に変更すると決定**（decisions #11）
 - Step 1 の検証ページを実装済み（`src/Spike.tsx`、`src/dropbox/`）。App key が空のため未実行
-- **ユーザー作業待ち**: `docs/setup-dropbox.md` の A（Dropbox アプリ登録 → App key を Claude に伝える）、B（Remotely Save を Dropbox に移行）
+- 移行方式を「新 Vault『Diary』を作って移す」に変更（decisions #12, #13）。手順2（コピーと掃除）完了 → `docs/vault-migration-log.md`
+- **ユーザー作業待ち**:
+  - `setup-dropbox.md` の手順3～6（新 Vault を Obsidian で開いて Remotely Save を Dropbox に接続。desktop-control で補助してよいと許可あり。Dropbox のログインはユーザー本人が行う）
+  - Dropbox 開発者アプリの登録 → App key を Claude に伝える
+  - push 用の `workflow` スコープ追加（`gh auth switch` → `gh auth refresh -s workflow` → 戻す）
+  - `app.json` の設定を復元するかの判断（`vault-migration-log.md` の「未実施」）
 - **次の一手**: App key を `src/config.ts` に設定 → push → iPhone で検証ページの 1～3 を実行 → Obsidian に同期されるか確認 → 結果を `docs/spike-result.md` に記録
 
 ## 構成案
