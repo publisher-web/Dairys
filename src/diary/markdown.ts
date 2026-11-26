@@ -279,7 +279,7 @@ function timeKey(e: Entry): number {
   return h * 60 + m
 }
 
-export function sortEntries(entries: Entry[]): Entry[] {
+export function sortEntries<T extends Entry>(entries: T[]): T[] {
   return entries
     .map((e, i) => ({ e, i }))
     .sort((a, b) => timeKey(a.e) - timeKey(b.e) || a.i - b.i)
@@ -358,7 +358,7 @@ export function applyDiary(original: string | null, date: string, update: DiaryU
   if (update.entries !== undefined) {
     const section = ensureSection(parts, 'events')
     const prefix = trimBlankEdges(parseEntries(section.lines).prefix)
-    const body = trimBlankEdges(update.entries.flatMap((e) => (e.raw ? e.raw : entryLines(e))))
+    const body = update.entries.flatMap((e) => (e.raw ? trimBlankEdges(e.raw) : entryLines(e)))
     const content = prefix.length > 0 && body.length > 0 ? [...prefix, '', ...body] : [...prefix, ...body]
     section.lines = [...content, ...Array<string>(trailingBlankCount(section.lines)).fill('')]
     const total = transactionTotal(update.entries)

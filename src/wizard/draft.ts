@@ -1,11 +1,12 @@
 import type { Entry } from '../diary/markdown'
+import type { PendingPhoto } from '../diary/photos'
 import { kvDelete, kvGet, kvSet } from '../storage/kv'
 
-export type StepId = 'entries' | 'mood' | 'oneLiner' | 'confirm'
+export type StepId = 'photos' | 'entries' | 'mood' | 'oneLiner' | 'confirm'
 
-export const STEPS: StepId[] = ['entries', 'mood', 'oneLiner', 'confirm']
+export const STEPS: StepId[] = ['photos', 'entries', 'mood', 'oneLiner', 'confirm']
 
-export type EditableEntry = Entry & { key: string }
+export type EditableEntry = Entry & { key: string; pendingPhotos?: PendingPhoto[] }
 
 export type Draft = {
   date: string
@@ -18,6 +19,7 @@ export type Draft = {
   moodTouched: boolean
   oneLinerTouched: boolean
   entriesTouched: boolean
+  uploaded?: Record<string, string>
   savedAt: number
 }
 

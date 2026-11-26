@@ -187,6 +187,13 @@ describe('applyDiary', () => {
     )
   })
 
+  it('does not leave a blank line after a raw entry that is no longer last', () => {
+    const text = ['---', 'type: diary', '---', '', '## 🕒 できごと', '- 20:30', '  夜', ''].join('\n')
+    const d = parseDiary(text, '2001-01-01')
+    const out = applyDiary(text, '2001-01-01', { entries: [d.entries[0], entry({ photos: ['attachments/p.jpg'] })] })
+    expect(out).toBe(['---', 'type: diary', 'date: "2001-01-01"', '---', '', '## 🕒 できごと', '- 20:30', '  夜', '- ![[attachments/p.jpg]]', ''].join('\n'))
+  })
+
   it('removes transaction when no amounts remain', () => {
     const d = parseDiary(NEW_FORMAT_CRLF, '2026-11-27')
     const out = applyDiary(NEW_FORMAT_CRLF, '2026-11-27', { entries: [d.entries[0]] })

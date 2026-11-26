@@ -9,7 +9,7 @@ const DOT = '#dccdae'
 
 const SQUIRCLE = 'M24 2.5C39.6 2.5 45.5 8.4 45.5 24S39.6 45.5 24 45.5 2.5 39.6 2.5 24 8.4 2.5 24 2.5Z'
 
-export type TileName = 'calendar' | 'quill' | 'leaf' | 'gear' | 'flame' | 'clock' | 'bubble' | 'smile' | 'clipboard' | 'stamp' | 'cloud' | 'moon' | 'people' | 'pin'
+export type TileName = 'calendar' | 'quill' | 'leaf' | 'gear' | 'flame' | 'clock' | 'bubble' | 'smile' | 'clipboard' | 'stamp' | 'cloud' | 'moon' | 'people' | 'pin' | 'camera'
 
 const TILE_COLORS: Record<TileName, string> = {
   calendar: '#9fddc0',
@@ -26,6 +26,7 @@ const TILE_COLORS: Record<TileName, string> = {
   moon: '#c9c3ea',
   people: '#ffe08f',
   pin: '#f7c9a8',
+  camera: '#d4eba6',
 }
 
 function gearPath(cx: number, cy: number, rOut: number, rIn: number, teeth: number): string {
@@ -149,6 +150,16 @@ const TILE_ART: Record<TileName, ReactNode> = {
       <ellipse cx="24" cy="38" rx="6" ry="1.6" fill={INK} opacity="0.16" />
       <path d="M24 37s-9.4-8.4-9.4-15.6a9.4 9.4 0 0 1 18.8 0C33.4 28.6 24 37 24 37Z" fill={PAPER} />
       <circle cx="24" cy="21.6" r="3.8" fill="#f08a6c" />
+    </>
+  ),
+  camera: (
+    <>
+      <rect x="18.4" y="12.4" width="9.6" height="6" rx="2.2" fill={PAPER} />
+      <rect x="10.6" y="16" width="26.8" height="19.6" rx="5.4" fill={PAPER} />
+      <circle cx="24" cy="25.8" r="6.6" fill={TEAL} />
+      <circle cx="24" cy="25.8" r="3.6" fill={INK} />
+      <circle cx="25.5" cy="24.3" r="1.2" fill={PAPER} />
+      <circle cx="32.6" cy="20.4" r="1.5" fill="#f08a6c" />
     </>
   ),
   moon: (

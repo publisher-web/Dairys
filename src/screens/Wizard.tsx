@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { applyDiary, formatAmount, mergeExternalEntries, parseDiary, sortEntries, type DiaryUpdate, type Entry } from '../diary/markdown'
 import { MOODS, moodFromEmoji } from '../diary/mood'
+import { groupPhotos, preparePhoto, uploadPhoto, type PendingPhoto } from '../diary/photos'
 import { loadDiary, saveDiary, type LoadedDiary } from '../diary/store'
 import { dateLabel, toDateString } from '../lib/date'
 import { Glyph, MoodIcon, TileIcon, WeatherIcon, type TileName } from '../ui/Icon'
@@ -10,6 +11,7 @@ import { linkLabel } from '../vault/refs'
 import { clearDraft, isTouched, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
 
 const STEP_META: Record<StepId, { icon: TileName; title: string; hint: string }> = {
+  photos: { icon: 'camera', title: '写真', hint: '今日撮った写真を選ぶと、できごとの下書きを作ります。写真がなければそのまま次へ進めます。' },
   entries: { icon: 'clock', title: 'できごと', hint: '今日あったことを1つずつ書きましょう。なければそのまま次へ進めます。' },
   mood: { icon: 'smile', title: '気分', hint: '今日はどんな1日でしたか？' },
   oneLiner: { icon: 'bubble', title: '今日の一言', hint: '1日をひとことで。音声入力も使えます。' },
@@ -26,7 +28,7 @@ function freshDraft(loaded: LoadedDiary): Draft {
   return {
     date: loaded.date,
     baseRev: loaded.rev,
-    step: 'entries',
+    step: 'photos',
     mood: loaded.diary.mood,
     oneLiner: loaded.diary.oneLiner,
     entries: toEditable(loaded.diary.entries),
@@ -45,12 +47,47 @@ function resumeDraft(saved: Draft, loaded: LoadedDiary): Draft {
   return { ...saved, entries: [...saved.entries, ...added], baseRev: loaded.rev, baseEntries: loaded.diary.entries }
 }
 
-function buildUpdate(draft: Draft, loaded: LoadedDiary): DiaryUpdate {
+const PENDING_PREFIX = 'pending:'
+
+function previewPath(p: PendingPhoto): string {
+  return `${PENDING_PREFIX}${p.id}`
+}
+
+function buildUpdate(draft: Draft, loaded: LoadedDiary, photoPath: (p: PendingPhoto) => string = previewPath): DiaryUpdate {
   const update: DiaryUpdate = {}
   if (draft.moodTouched && draft.mood !== loaded.diary.mood) update.mood = draft.mood
   if (draft.oneLinerTouched && draft.oneLiner.trim() !== loaded.diary.oneLiner.trim()) update.oneLiner = draft.oneLiner
-  if (draft.entriesTouched) update.entries = sortEntries(draft.entries.map(({ key: _key, ...e }) => (void _key, e)))
+  if (draft.entriesTouched)
+    update.entries = sortEntries(
+      draft.entries.map(({ key: _key, pendingPhotos, ...e }) => {
+        void _key
+        return pendingPhotos && pendingPhotos.length > 0 ? { ...e, photos: [...e.photos, ...pendingPhotos.map(photoPath)], raw: null } : e
+      }),
+    )
   return update
+}
+
+function isEmptyEntry(e: EditableEntry): boolean {
+  return !e.raw && e.text.every((t) => !t.trim()) && e.photos.length === 0 && !(e.pendingPhotos?.length ?? 0) && !e.place && e.people.length === 0 && !e.amount && !e.time
+}
+
+function blankEntry(): EditableEntry {
+  return { key: newKey(), time: null, weather: null, place: null, people: [], amount: null, text: [], photos: [], raw: null }
+}
+
+async function prepareAll(files: File[], onProgress: (done: number, total: number) => void): Promise<{ photos: PendingPhoto[]; failed: number }> {
+  const photos: PendingPhoto[] = []
+  let failed = 0
+  for (let i = 0; i < files.length; i++) {
+    onProgress(i, files.length)
+    try {
+      photos.push(await preparePhoto(files[i], newKey()))
+    } catch {
+      failed++
+    }
+  }
+  onProgress(files.length, files.length)
+  return { photos, failed }
 }
 
 function errorText(e: unknown): string {
@@ -61,6 +98,8 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [draft, setDraft] = useState<Draft | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [photoStatus, setPhotoStatus] = useState<{ done: number; total: number; failed: number } | null>(null)
+  const [saveProgress, setSaveProgress] = useState<string | null>(null)
   const [today] = useState(() => toDateString(new Date()))
   const saveTimer = useRef<number | null>(null)
 
@@ -92,6 +131,35 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
 
   const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
   const updateEntries = (fn: (entries: EditableEntry[]) => EditableEntry[]) => setDraft((d) => (d ? { ...d, entries: fn(d.entries), entriesTouched: true } : d))
+
+  const loadFiles = async (files: File[]) => {
+    if (files.length === 0) return null
+    const result = await prepareAll(files, (done, total) => setPhotoStatus({ done, total, failed: 0 }))
+    setPhotoStatus(result.failed > 0 ? { done: files.length, total: files.length, failed: result.failed } : null)
+    return result.photos
+  }
+
+  const addPhotosAsEntries = async (files: File[]) => {
+    const photos = await loadFiles(files)
+    if (!photos || photos.length === 0) return
+    const cards = groupPhotos(photos).map((group) => ({ ...blankEntry(), time: group[0].taken?.time ?? null, pendingPhotos: group }))
+    updateEntries((list) => sortEntries([...list, ...cards]))
+  }
+
+  const addPhotosToEntry = async (key: string, files: File[]) => {
+    const photos = await loadFiles(files)
+    if (!photos || photos.length === 0) return
+    updateEntries((list) =>
+      list.map((x) => (x.key === key ? { ...x, time: x.time ?? photos.find((p) => p.taken)?.taken?.time ?? null, pendingPhotos: [...(x.pendingPhotos ?? []), ...photos], raw: null } : x)),
+    )
+  }
+
+  const removePhoto = (key: string, id: string) =>
+    updateEntries((list) =>
+      list
+        .map((x) => (x.key === key ? { ...x, pendingPhotos: (x.pendingPhotos ?? []).filter((p) => p.id !== id) } : x))
+        .filter((x) => x.key !== key || !isEmptyEntry(x)),
+    )
 
   if (phase.kind === 'loading')
     return (
@@ -171,17 +239,32 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
   const hasChanges = Object.keys(diaryUpdate).length > 0
   const saving = phase.kind === 'saving'
 
+  const pendingPhotos = draft.entries.flatMap((e) => e.pendingPhotos ?? [])
+  const photoBlobs = new Map(pendingPhotos.map((p) => [`${PENDING_PREFIX}${p.id}`, p.blob]))
+
   const save = async () => {
     setPhase({ kind: 'saving', loaded })
     setSaveError(null)
+    const uploaded: Record<string, string> = { ...(draft.uploaded ?? {}) }
     try {
-      const result = await saveDiary(loaded, diaryUpdate)
+      for (let i = 0; i < pendingPhotos.length; i++) {
+        const p = pendingPhotos[i]
+        if (uploaded[p.id]) continue
+        setSaveProgress(`写真を保存しています（${i + 1} / ${pendingPhotos.length}）`)
+        uploaded[p.id] = await uploadPhoto(p)
+        await storeDraft({ ...draft, uploaded })
+      }
+      setSaveProgress('日記を保存しています…')
+      const result = await saveDiary(loaded, buildUpdate(draft, loaded, (p) => uploaded[p.id]))
       await clearDraft(date)
       setPhase({ kind: 'done', merged: result.merged })
     } catch (e) {
-      await storeDraft(draft)
+      setDraft({ ...draft, uploaded })
+      await storeDraft({ ...draft, uploaded })
       setPhase({ kind: 'editing', loaded })
       setSaveError(`保存できませんでした（${errorText(e)}）。下書きは残っているので、もう一度お試しください。`)
+    } finally {
+      setSaveProgress(null)
     }
   }
 
@@ -208,20 +291,60 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
         <div className="panel-body">
           <p className="muted">{meta.hint}</p>
 
+          {draft.step === 'photos' && (
+            <div className="stack">
+              <label className="photo-drop">
+                <TileIcon name="camera" size={60} />
+                <span className="photo-drop-title">写真を選ぶ</span>
+                <span className="muted small">何枚でもまとめて選べます</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="visually-hidden"
+                  onChange={(e) => {
+                    const files = [...(e.target.files ?? [])]
+                    e.target.value = ''
+                    addPhotosAsEntries(files)
+                  }}
+                />
+              </label>
+              <PhotoStatus status={photoStatus} />
+              {pendingPhotos.length > 0 && (
+                <>
+                  <div className="photo-grid">
+                    {draft.entries.flatMap((e) =>
+                      (e.pendingPhotos ?? []).map((p) => (
+                        <div key={p.id} className="photo-cell">
+                          <Thumb blob={p.blob} />
+                          <span className="tag cream photo-time">{p.taken?.time ?? '時刻なし'}</span>
+                          <button className="photo-remove" aria-label="この写真を外す" onClick={() => removePhoto(e.key, p.id)}>
+                            <Glyph name="close" size={14} />
+                          </button>
+                        </div>
+                      )),
+                    )}
+                  </div>
+                  <p className="muted small">次の画面で、写真ごとにできごとを書き足せます。</p>
+                </>
+              )}
+            </div>
+          )}
+
           {draft.step === 'entries' && (
             <div className="stack">
+              <PhotoStatus status={photoStatus} />
               {draft.entries.map((e) => (
                 <EntryCard
                   key={e.key}
                   entry={e}
                   onChange={(patch) => updateEntries((list) => list.map((x) => (x.key === e.key ? { ...x, ...patch, raw: null } : x)))}
                   onDelete={() => updateEntries((list) => list.filter((x) => x.key !== e.key))}
+                  onAddPhotos={(files) => addPhotosToEntry(e.key, files)}
+                  onRemovePhoto={(id) => removePhoto(e.key, id)}
                 />
               ))}
-              <button
-                className="add-button"
-                onClick={() => updateEntries((list) => [...list, { key: newKey(), time: null, weather: null, place: null, people: [], amount: null, text: [], photos: [], raw: null }])}
-              >
+              <button className="add-button" onClick={() => updateEntries((list) => [...list, blankEntry()])}>
                 <Glyph name="plus" />
                 できごとを追加
               </button>
@@ -254,7 +377,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
             <textarea className="field lined" rows={5} placeholder="今日をひとことで" value={draft.oneLiner} onChange={(e) => update({ oneLiner: e.target.value, oneLinerTouched: true })} />
           )}
 
-          {draft.step === 'confirm' && (hasChanges ? <Summary text={applyDiary(loaded.text, date, diaryUpdate)} date={date} /> : <p>まだ何も書かれていません。前の画面に戻って書いてみましょう。</p>)}
+          {draft.step === 'confirm' && (hasChanges ? <Summary text={applyDiary(loaded.text, date, diaryUpdate)} date={date} photoBlobs={photoBlobs} /> : <p>まだ何も書かれていません。前の画面に戻って書いてみましょう。</p>)}
 
           {draft.step === 'confirm' && saveError && <p className="error">{saveError}</p>}
         </div>
@@ -267,17 +390,21 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
         {draft.step === 'confirm' ? (
           <button className="btn primary" onClick={save} disabled={!hasChanges || saving}>
             <Glyph name="check" />
-            {saving ? '保存しています…' : '保存する'}
+            {saving ? (saveProgress ?? '保存しています…') : '保存する'}
           </button>
         ) : (
           <button className="btn primary" onClick={() => go(1)}>
-            {draft.step === 'mood' && !draft.mood ? 'スキップ' : '次へ'}
+            {(draft.step === 'mood' && !draft.mood) || (draft.step === 'photos' && pendingPhotos.length === 0) ? 'スキップ' : '次へ'}
             <Glyph name="chevronRight" />
           </button>
         )}
       </div>
     </div>
   )
+}
+
+function savedPhotoCount(entry: Entry): number {
+  return entry.photos.filter((p) => !p.startsWith(PENDING_PREFIX)).length
 }
 
 function EntryChips({ entry, linksEditable = false }: { entry: Entry; linksEditable?: boolean }) {
@@ -305,17 +432,25 @@ function EntryChips({ entry, linksEditable = false }: { entry: Entry; linksEdita
         {formatAmount(entry.amount)}
       </span>
     ) : null,
-    entry.photos.length > 0 ? (
+    savedPhotoCount(entry) > 0 ? (
       <span key="ph" className="tag plain">
         <Glyph name="photo" size={15} />
-        {entry.photos.length}枚
+        保存済みの写真 {savedPhotoCount(entry)}枚
       </span>
     ) : null,
   ].filter(Boolean)
   return chips.length > 0 ? <div className="chips">{chips}</div> : null
 }
 
-function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChange: (patch: Partial<Entry>) => void; onDelete: () => void }) {
+type EntryCardProps = {
+  entry: EditableEntry
+  onChange: (patch: Partial<Entry>) => void
+  onDelete: () => void
+  onAddPhotos: (files: File[]) => void
+  onRemovePhoto: (id: string) => void
+}
+
+function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto }: EntryCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [picker, setPicker] = useState<'people' | 'place' | null>(null)
 
@@ -341,6 +476,18 @@ function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChan
           </button>
         )}
       </div>
+      {(entry.pendingPhotos?.length ?? 0) > 0 && (
+        <div className="photo-strip">
+          {entry.pendingPhotos!.map((p) => (
+            <div key={p.id} className="photo-cell small">
+              <Thumb blob={p.blob} />
+              <button className="photo-remove" aria-label="この写真を外す" onClick={() => onRemovePhoto(p.id)}>
+                <Glyph name="close" size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <textarea className="field" rows={2} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
       <div className="entry-links">
         {entry.place ? (
@@ -370,6 +517,21 @@ function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChan
           <Glyph name="people" size={15} />
           {entry.people.length > 0 ? '人を追加' : '一緒にいた人'}
         </button>
+        <label className="chip-add">
+          <Glyph name="photo" size={15} />
+          写真
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="visually-hidden"
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])]
+              e.target.value = ''
+              onAddPhotos(files)
+            }}
+          />
+        </label>
       </div>
       <EntryChips entry={entry} linksEditable />
       {picker && (
@@ -388,7 +550,31 @@ function EntryCard({ entry, onChange, onDelete }: { entry: EditableEntry; onChan
   )
 }
 
-function Summary({ text, date }: { text: string; date: string }) {
+const blobUrls = new WeakMap<Blob, string>()
+
+function blobUrl(blob: Blob): string {
+  const cached = blobUrls.get(blob)
+  if (cached) return cached
+  const url = URL.createObjectURL(blob)
+  blobUrls.set(blob, url)
+  return url
+}
+
+function Thumb({ blob }: { blob: Blob }) {
+  return <img className="thumb" src={blobUrl(blob)} alt="" />
+}
+
+function PhotoStatus({ status }: { status: { done: number; total: number; failed: number } | null }) {
+  if (!status) return null
+  if (status.failed > 0) return <p className="error">読み込めなかった写真が {status.failed} 枚ありました。</p>
+  return (
+    <p className="muted small center">
+      写真を読み込んでいます（{status.done} / {status.total}）
+    </p>
+  )
+}
+
+function Summary({ text, date, photoBlobs }: { text: string; date: string; photoBlobs: Map<string, Blob> }) {
   const diary = parseDiary(text, date)
   const mood = moodFromEmoji(diary.mood)
   return (
@@ -421,6 +607,17 @@ function Summary({ text, date }: { text: string; date: string }) {
               <span className="tag cream">{e.time ?? '－'}</span>
               <div className="stack tight">
                 {e.text.length > 0 && <p className="value">{e.text.join('\n')}</p>}
+                {e.photos.some((p) => photoBlobs.has(p)) && (
+                  <div className="photo-strip">
+                    {e.photos
+                      .filter((p) => photoBlobs.has(p))
+                      .map((p) => (
+                        <div key={p} className="photo-cell small">
+                          <Thumb blob={photoBlobs.get(p)!} />
+                        </div>
+                      ))}
+                  </div>
+                )}
                 <EntryChips entry={e} />
               </div>
             </div>

@@ -40,10 +40,12 @@
 | 罫線ノート | `.field.lined` | 今日の一言の入力欄 |
 | 下から出るシート | `.sheet`（`Picker`） | スマホでは下からスライド、PC では中央のモーダル。候補行 `.pick-row`、頭文字アバター `.avatar`（色は名前のハッシュ） |
 | 外せるピル | `.tag.removable` | × ボタンつき。追加ボタンは点線の `.chip-add` |
+| 写真の選択エリア | `.photo-drop` | ストライプ地＋点線枠、中央にカメラタイル |
+| 写真の一覧 | `.photo-grid` / `.photo-strip` / `.photo-cell` | 3列グリッド（写真ステップ）と横並び（カード・確認画面）。左下に時刻ピル、右上に × |
 
 ## アイコン（`src/ui/Icon.tsx`）
 
-- `TileIcon`: スクワークル（`SQUIRCLE` パス）のパステル土台＋フラット図形。calendar / quill / leaf / gear / flame / clock / bubble / smile / clipboard / stamp / cloud / moon / people / pin
+- `TileIcon`: スクワークル（`SQUIRCLE` パス）のパステル土台＋フラット図形。calendar / quill / leaf / gear / flame / clock / bubble / smile / clipboard / stamp / cloud / moon / people / pin / camera
 - `MoodIcon`: 気分5段階（great / good / okay / meh / down）。対応は `src/diary/mood.ts`
 - `Glyph`: 24px 線画（currentColor）。chevron / plus / trash / pin / people / yen / clock / check / logout / refresh / flask / photo / pencil / leaf / close / search / question
 - `WeatherIcon`: 日記の天気絵文字 → SVG（対応表は `src/ui/weather.ts`）
