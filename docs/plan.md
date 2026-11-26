@@ -12,8 +12,8 @@
 - **ユーザー作業待ち**:
   - `setup-dropbox.md` の手順3～6（新 Vault を Obsidian で開いて Remotely Save を Dropbox に接続。desktop-control で補助してよいと許可あり。Dropbox のログインはユーザー本人が行う）
   - Dropbox 開発者アプリの登録 → App key を Claude に伝える
-  - push 用の `workflow` スコープ追加（`gh auth switch` → `gh auth refresh -s workflow` → 戻す）
-  - `app.json` の設定を復元するかの判断（`vault-migration-log.md` の「未実施」）
+- push 権限追加済み・push 済み。GitHub Pages デプロイ成功（https://publisher-web.github.io/Dairys/ 200）
+- 新 Vault の `app.json` 設定を復元済み。Obsidian の `obsidian.json` に Diary を登録済み（元ファイル: `%APPDATA%\obsidian\obsidian.json.bak-dairys`）
 - **次の一手**: App key を `src/config.ts` に設定 → push → iPhone で検証ページの 1～3 を実行 → Obsidian に同期されるか確認 → 結果を `docs/spike-result.md` に記録
 
 ## 構成案

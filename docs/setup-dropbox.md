@@ -7,7 +7,7 @@
 | 用途 | パス | 扱い |
 |---|---|---|
 | 新 Vault（PC） | `C:\Users\User3\Documents\Obsidian\Diary` | これから使う |
-| 新 Vault（Dropbox） | `/Apps/remotely-save/Diary`（Remotely Save が Vault 名で作る見込み [推測]） | Web アプリの書き込み先 |
+| 新 Vault（Dropbox） | `/Apps/remotely-save/Diary`（Remotely Save の設定画面の表示で確認済み [確証]） | Web アプリの書き込み先 |
 | 旧 Vault（OneDrive） | `C:\Users\User3\OneDrive\アプリ\remotely-save\Main` | バックアップ。コピー元（2026-11-26 時点で最新） |
 | 旧 Vault（PC） | `C:\Users\User3\Documents\ObsidianBackUp\Main` | バックアップ。10/21 頃で止まっている |
 | 旧 Vault（iPhone） | Obsidian アプリ内 `Main` | バックアップ。2026-11-26 に OneDrive と同期済み |

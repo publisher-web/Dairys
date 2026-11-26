@@ -33,3 +33,8 @@
 
 - `.obsidian/app.json` の設定の復元。6月時点の `app(1).json` にあった `newFileFolderPath: 00_Inbox`、`attachmentFolderPath: ./attachments`、`alwaysUpdateLinks: true`、`defaultViewMode: preview` が、現在の `app.json` から消えている。未作成リンクから作ったノートが Vault 直下にできたのはこれが原因 [推測]
 - `20_Knowledge/無題のファイル.md` は中身のある技術メモ（Cloudflare 入門）なので、名前の変更を提案するにとどめた
+
+## 2026-11-26 追加作業
+
+- `.obsidian/app.json` を復元（ユーザー承認）: `newFileLocation: folder`、`newFileFolderPath: 00_Inbox`、`attachmentFolderPath: attachments`、`alwaysUpdateLinks: true`、`defaultViewMode: preview`。元は `./attachments` だったが、これは「ノートと同じフォルダ内」を意味し写真が散らばるため、既存の写真がある Vault 直下の `attachments` にした
+- `%APPDATA%\obsidian\obsidian.json` に Diary を登録して `open: true` にした（バックアップ: `obsidian.json.bak-dairys`）

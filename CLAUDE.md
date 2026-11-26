@@ -41,5 +41,5 @@
 | Obsidian Vault（PC ローカル） | `C:\Users\User3\Documents\ObsidianBackUp\Main`（Remotely Save で同期。2026-11 時点ではリモートより古い） |
 | 技術スタック | Vite＋React＋TypeScript、oxlint。`npm run build` / `npm run lint` |
 | Git 作成者 | リポジトリのローカル設定で `publisher-web <359089006+publisher-web@users.noreply.github.com>`（グローバルの Gmail アドレスを公開しないため） |
-| push | publisher-web のトークンに `workflow` スコープが必要。push は `git -c credential.helper= -c credential.helper='!f() { echo username=publisher-web; echo password=$GH_TOKEN; }; f' push` に `GH_TOKEN=$(gh auth token --user publisher-web)` を付けて実行 |
+| push | publisher-web のトークンに `workflow` スコープ追加済み（2026-11-26）。push は `git -c credential.helper= -c credential.helper='!f() { echo username=publisher-web; echo password=$GH_TOKEN; }; f' push` に `GH_TOKEN=$(gh auth token --user publisher-web)` を付けて実行 |
 | 注意 | OneDrive が停止しているとオンライン専用ファイルが読めない（`The cloud file provider is not running`） |
