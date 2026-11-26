@@ -334,3 +334,242 @@ body {
     animation: none;
   }
 }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+.streak {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sun) 35%, transparent);
+  font-size: 0.95rem;
+}
+
+.pill {
+  flex: none;
+  padding: 2px 12px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--paper-edge);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.pill.done {
+  border-color: var(--leaf);
+  color: var(--leaf);
+}
+
+.banner {
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  padding: 14px 18px;
+  border: 3px dashed var(--peach);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--peach) 18%, var(--paper));
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--paper-edge) 55%, transparent);
+}
+
+.segmented > button,
+.segmented > label {
+  position: relative;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 8px 4px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  text-align: center;
+  cursor: pointer;
+}
+
+.segmented > .on {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--paper-edge);
+}
+
+.segmented input[type='date'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.wizard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper-edge);
+  transition: all 0.2s ease;
+}
+
+.dot.past {
+  background: var(--leaf);
+}
+
+.dot.now {
+  width: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+}
+
+.field {
+  font: inherit;
+  width: 100%;
+  padding: 12px 14px;
+  border: 3px solid var(--paper-edge);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg) 45%, var(--paper));
+  color: var(--ink);
+  resize: vertical;
+  font-size: 16px;
+}
+
+.field:focus,
+.time-field input:focus {
+  outline: none;
+  border-color: var(--leaf);
+}
+
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid var(--paper-edge);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--sun) 10%, var(--paper));
+}
+
+.time-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.time-field input {
+  font: inherit;
+  font-size: 16px;
+  padding: 6px 10px;
+  border: 3px solid var(--paper-edge);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  min-width: 7.5em;
+}
+
+.mini {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 2px solid var(--paper-edge);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mini.danger {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--sky) 30%, transparent);
+  font-size: 0.85rem;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.mood {
+  font-size: 2.2rem;
+  aspect-ratio: 1;
+  border: 3px solid var(--paper-edge);
+  border-radius: 22px;
+  background: var(--paper);
+  box-shadow: 0 4px 0 var(--paper-edge);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mood.on {
+  border-color: var(--sun);
+  background: color-mix(in srgb, var(--sun) 35%, var(--paper));
+  transform: translateY(-4px) scale(1.06);
+}
+
+.mood:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--paper-edge);
+}
+
+.preview {
+  margin: 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg) 60%, var(--paper));
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.nav-row {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 12px;
+}

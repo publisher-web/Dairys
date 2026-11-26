@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyDiary, entryLines, newDiaryText, parseDiary, parseDocument, parseEntries, serializeDocument, transactionTotal, type Entry } from './markdown'
+import { applyDiary, entryLines, isWritten, mergeExternalEntries, newDiaryText, parseDiary, parseDocument, parseEntries, serializeDocument, sortEntries, transactionTotal, type Entry } from './markdown'
 
 const EMPTY_TEMPLATE = ['---', 'type: diary', 'date: "2026-10-13"', 'mood:', '---', '', '## 📝 今日の一言', '- '].join('\n')
 
@@ -246,5 +246,40 @@ describe('entries', () => {
 describe('newDiaryText', () => {
   it('matches the calendar plugin template shape', () => {
     expect(newDiaryText('2026-12-01')).toBe('---\ntype: diary\ndate: "2026-12-01"\nmood:\n---\n\n## 📝 今日の一言\n- \n\n## 🕒 できごと\n')
+  })
+})
+
+describe('isWritten', () => {
+  it('follows the calendar plugin rule', () => {
+    expect(isWritten(EMPTY_TEMPLATE)).toBe(false)
+    expect(isWritten(OLD_FILLED)).toBe(true)
+    expect(isWritten(newDiaryText('2026-12-01'))).toBe(false)
+    expect(isWritten(newDiaryText('2026-12-01').replace('mood:', 'mood: 🙂'))).toBe(true)
+    expect(isWritten(newDiaryText('2026-12-01') + '- 12:00\n')).toBe(true)
+  })
+})
+
+describe('sortEntries', () => {
+  it('orders by time and keeps untimed entries last in their order', () => {
+    const a = entry({ time: '18:00', text: ['a'] })
+    const b = entry({ text: ['b'] })
+    const c = entry({ time: '09:30', text: ['c'] })
+    const d = entry({ text: ['d'] })
+    expect(sortEntries([a, b, c, d]).map((e) => e.text[0])).toEqual(['c', 'a', 'b', 'd'])
+  })
+})
+
+describe('mergeExternalEntries', () => {
+  it('keeps entries added elsewhere after the diary was loaded', () => {
+    const loaded = parseEntries(['- 09:00', '  朝']).entries
+    const latest = parseEntries(['- 09:00', '  朝', '- 13:00', '  Obsidian で追加']).entries
+    const ours = [entry({ time: '20:00', text: ['夜'] })]
+    const merged = mergeExternalEntries(loaded, latest, ours)
+    expect(merged.map((e) => e.text[0])).toEqual(['夜', 'Obsidian で追加'])
+  })
+
+  it('does not resurrect entries the user deleted in the app', () => {
+    const loaded = parseEntries(['- 09:00', '  朝']).entries
+    expect(mergeExternalEntries(loaded, loaded, [])).toEqual([])
   })
 })

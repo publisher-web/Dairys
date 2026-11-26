@@ -1,29 +1,45 @@
 import { useEffect, useState } from 'react'
+import { writtenDates } from '../diary/store'
 import { resolveVaultRoot } from '../dropbox/vault'
+import { addDays, dateLabel, defaultDiaryDate, streakDays, toDateString } from '../lib/date'
+import { loadDraft } from '../wizard/draft'
 
-type VaultState = { kind: 'wait' } | { kind: 'ok'; root: string } | { kind: 'ng'; message: string }
+type VaultState = { kind: 'wait' } | { kind: 'ok' } | { kind: 'ng'; message: string }
 
 function greeting(hour: number): { emoji: string; text: string } {
-  if (hour < 5) return { emoji: '🌙', text: 'おそくまでおつかれさま' }
+  if (hour < 4) return { emoji: '🌙', text: 'よふかしさん、おつかれさま' }
   if (hour < 11) return { emoji: '🌤️', text: 'おはよう' }
   if (hour < 17) return { emoji: '☀️', text: 'こんにちは' }
   return { emoji: '🌙', text: 'こんばんは' }
 }
 
-function todayLabel(now: Date): string {
-  return now.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' })
-}
-
-export default function Home() {
-  const [vault, setVault] = useState<VaultState>({ kind: 'wait' })
+export default function Home({ onStart }: { onStart: (date: string) => void }) {
   const [now] = useState(() => new Date())
+  const today = toDateString(now)
+  const [date, setDate] = useState(() => defaultDiaryDate(now))
+  const [vault, setVault] = useState<VaultState>({ kind: 'wait' })
+  const [written, setWritten] = useState<Set<string> | null>(null)
+  const [hasDraft, setHasDraft] = useState(false)
   const hello = greeting(now.getHours())
 
   useEffect(() => {
     resolveVaultRoot()
-      .then((root) => setVault({ kind: 'ok', root }))
+      .then(() => {
+        setVault({ kind: 'ok' })
+        return writtenDates(addDays(today, -400))
+      })
+      .then(setWritten)
       .catch((e: unknown) => setVault({ kind: 'ng', message: e instanceof Error ? e.message : String(e) }))
-  }, [])
+  }, [today])
+
+  useEffect(() => {
+    loadDraft(date).then((d) => setHasDraft(!!d))
+  }, [date])
+
+  const yesterday = addDays(today, -1)
+  const streak = written ? streakDays(written, today) : null
+  const isDone = written?.has(date) ?? false
+  const missedYesterday = written !== null && date === today && !written.has(yesterday)
 
   return (
     <div className="stack">
@@ -32,15 +48,42 @@ export default function Home() {
           {hello.emoji}
         </span>
         <p className="hero-title">{hello.text}</p>
-        <p className="muted">{todayLabel(now)}</p>
+        <p className="muted">{dateLabel(today, today)}</p>
+        {streak !== null && (
+          <p className="streak">
+            🔥 <b>{streak}</b> 日れんぞく
+          </p>
+        )}
       </section>
+
+      {missedYesterday && (
+        <button className="banner" onClick={() => setDate(yesterday)}>
+          <span aria-hidden="true">🍃</span> きのうがまだだよ。きのうを書く？
+        </button>
+      )}
+
       <section className="card stack">
-        <h2>今日のふりかえり</h2>
-        <p className="muted">写真 → できごと → 気分 → 一言 の順に、ゆっくり書けるようになるよ。</p>
-        <button className="btn" disabled>
-          じゅんびちゅう…
+        <div className="row between">
+          <h2>📅 {dateLabel(date, today)}</h2>
+          <span className={`pill ${isDone ? 'done' : ''}`}>{written === null ? '…' : isDone ? 'かけた ✅' : 'まだ ✏️'}</span>
+        </div>
+        <div className="segmented">
+          <button className={date === yesterday ? 'on' : ''} onClick={() => setDate(yesterday)}>
+            きのう
+          </button>
+          <button className={date === today ? 'on' : ''} onClick={() => setDate(today)}>
+            今日
+          </button>
+          <label className={date !== today && date !== yesterday ? 'on' : ''}>
+            ほかの日
+            <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          </label>
+        </div>
+        <button className="btn" disabled={vault.kind !== 'ok'} onClick={() => onStart(date)}>
+          {hasDraft ? '✏️ つづきを書く' : isDone ? '📝 書きたす・なおす' : '🌙 ふりかえりをはじめる'}
         </button>
       </section>
+
       <section className="card">
         <div className="status">
           <span className={`status-dot ${vault.kind}`} />

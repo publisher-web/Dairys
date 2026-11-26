@@ -262,6 +262,43 @@ export function transactionTotal(entries: Entry[]): string | null {
   return total === 0 ? '0' : formatAmount(total)
 }
 
+export function isWritten(text: string): boolean {
+  const parts = parseDocument(text)
+  if (getFrontmatter(parts, 'mood') !== null) return true
+  const body = [...parts.preamble, ...parts.sections.flatMap((s) => s.lines)]
+  return body.some((raw) => {
+    const line = raw.trim()
+    if (!line || /^#{1,6}(\s|$)/.test(line) || /^[-*+]$/.test(line)) return false
+    return line.replace(/^[-*+]\s+/, '').replace(/^\[[ xX]\]\s*/, '').trim().length > 0
+  })
+}
+
+function timeKey(e: Entry): number {
+  if (!e.time) return Number.POSITIVE_INFINITY
+  const [h, m] = e.time.split(':').map(Number)
+  return h * 60 + m
+}
+
+export function sortEntries(entries: Entry[]): Entry[] {
+  return entries
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => timeKey(a.e) - timeKey(b.e) || a.i - b.i)
+    .map(({ e }) => e)
+}
+
+function rawKey(e: Entry): string | null {
+  return e.raw ? trimBlankEdges(e.raw).join('\n') : null
+}
+
+export function mergeExternalEntries(loaded: Entry[], latest: Entry[], ours: Entry[]): Entry[] {
+  const known = new Set(loaded.map(rawKey).filter((k): k is string => k !== null))
+  const added = latest.filter((e) => {
+    const k = rawKey(e)
+    return k !== null && !known.has(k)
+  })
+  return added.length > 0 ? [...ours, ...added] : ours
+}
+
 export function newDiaryText(date: string): string {
   return ['---', 'type: diary', `date: "${date}"`, 'mood:', '---', '', ONE_LINER_HEADING, '- ', '', EVENTS_HEADING, ''].join('\n')
 }
