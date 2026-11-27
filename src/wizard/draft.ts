@@ -1,6 +1,6 @@
 import type { Entry } from '../diary/markdown'
 import type { PendingPhoto } from '../diary/photos'
-import { kvDelete, kvGet, kvSet } from '../storage/kv'
+import { kvDelete, kvGet, kvKeys, kvSet } from '../storage/kv'
 
 export type StepId = 'photos' | 'entries' | 'mood' | 'oneLiner' | 'confirm'
 
@@ -42,6 +42,20 @@ export async function storeDraft(draft: Draft): Promise<void> {
     await kvSet(key(draft.date), { ...draft, savedAt: Date.now() })
   } catch {
     void 0
+  }
+}
+
+export async function pendingDraftDates(): Promise<string[]> {
+  try {
+    const keys = await kvKeys('draft:')
+    const drafts = await Promise.all(keys.map((k) => kvGet<Draft>(k)))
+    return drafts
+      .filter((d): d is Draft => isTouched(d))
+      .map((d) => d.date)
+      .sort()
+      .reverse()
+  } catch {
+    return []
   }
 }
 

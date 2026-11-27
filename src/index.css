@@ -1430,3 +1430,27 @@ button:focus-visible,
 .time-chip {
   line-height: 1.2;
 }
+
+.hint-title {
+  font-weight: 700;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: 0.9rem;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.steps li + li {
+  margin-top: 2px;
+}
+
+.tag-button {
+  border: none;
+}
+
+.tag.plain.tag-button {
+  border: 1.5px solid var(--line);
+}

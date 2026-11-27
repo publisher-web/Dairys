@@ -3,7 +3,7 @@ import type { VaultState } from '../App'
 import { writtenDates } from '../diary/store'
 import { addDays, dateLabel, defaultDiaryDate, fromDateString, relativeDayName, streakDays, toDateString } from '../lib/date'
 import { Glyph, TileIcon, type TileName } from '../ui/Icon'
-import { isTouched, loadDraft } from '../wizard/draft'
+import { isTouched, loadDraft, pendingDraftDates } from '../wizard/draft'
 
 function greeting(hour: number): { icon: TileName; text: string } {
   if (hour < 4) return { icon: 'moon', text: '夜ふかしですね' }
@@ -17,9 +17,10 @@ function dateFromUrl(today: string): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today ? value : null
 }
 
-function shortDate(s: string): string {
+function shortDate(s: string, today?: string): string {
   const d = fromDateString(s)
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  const md = `${d.getMonth() + 1}/${d.getDate()}`
+  return today && s.slice(0, 4) !== today.slice(0, 4) ? `${d.getFullYear()}/${md}` : md
 }
 
 export default function Home({ vault, onStart }: { vault: VaultState; onStart: (date: string) => void }) {
@@ -29,6 +30,7 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
   const [date, setDate] = useState(() => dateFromUrl(toDateString(now)) ?? defaultDiaryDate(now))
   const [written, setWritten] = useState<Set<string> | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
+  const [drafts, setDrafts] = useState<string[]>([])
   const hello = greeting(now.getHours())
 
   useEffect(() => {
@@ -41,6 +43,12 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
   useEffect(() => {
     loadDraft(date).then((d) => setHasDraft(isTouched(d)))
   }, [date])
+
+  useEffect(() => {
+    pendingDraftDates().then(setDrafts)
+  }, [])
+
+  const otherDrafts = drafts.filter((d) => d !== date)
 
   const streak = written ? streakDays(written, today) : null
   const isDone = written?.has(date) ?? false
@@ -55,7 +63,23 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
         <p className="hero-title">{hello.text}</p>
       </div>
 
-      {missedYesterday && (
+      {otherDrafts.length > 0 && (
+        <div className="notice">
+          <TileIcon name="quill" size={36} />
+          <div className="grow stack tight">
+            <p>保存していない下書きがあります</p>
+            <div className="chips">
+              {otherDrafts.slice(0, 4).map((d) => (
+                <button key={d} className="tag cream tag-button" onClick={() => setDate(d)}>
+                  {shortDate(d, today)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {missedYesterday && !otherDrafts.includes(yesterday) && (
         <div className="notice">
           <TileIcon name="quill" size={36} />
           <p className="grow">昨日の日記がまだです</p>

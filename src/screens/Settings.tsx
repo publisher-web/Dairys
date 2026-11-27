@@ -3,10 +3,12 @@ import { logout } from '../dropbox/auth'
 import { forgetVaultRoot, resolveVaultRoot } from '../dropbox/vault'
 import { isWeatherEnabled, setWeatherEnabled } from '../diary/weather'
 import { Glyph } from '../ui/Icon'
+
+const APP_URL = 'https://publisher-web.github.io/Dairys/'
 import { loadDirectory } from '../vault/directory'
 import { useDirectory } from '../vault/useDirectory'
 
-export default function Settings({ onLogout, onOpenSpike, onOpenUnresolved }: { onLogout: () => void; onOpenSpike: () => void; onOpenUnresolved: () => void }) {
+export default function Settings({ onLogout, onOpenUnresolved }: { onLogout: () => void; onOpenUnresolved: () => void }) {
   const dir = useDirectory()
   const [weatherOn, setWeatherOn] = useState(isWeatherEnabled)
   const [root, setRoot] = useState<string | null>(null)
@@ -73,6 +75,26 @@ export default function Settings({ onLogout, onOpenSpike, onOpenUnresolved }: { 
         </button>
       </section>
       <section className="card stack">
+        <span className="ribbon yellow">使い方のヒント</span>
+        <div className="stack tight">
+          <p className="hint-title">ホーム画面に追加する</p>
+          <ol className="steps">
+            <li>Safari で Dairys を開く</li>
+            <li>共有ボタン →「ホーム画面に追加」</li>
+            <li>名前は「Dairys」のまま「追加」</li>
+          </ol>
+        </div>
+        <div className="stack tight">
+          <p className="hint-title">毎晩お知らせする（ショートカット App）</p>
+          <ol className="steps">
+            <li>「オートメーション」→「＋」→「時刻」</li>
+            <li>時刻（例：21:30）と「毎日」を選び、「すぐに実行」にする</li>
+            <li>アクション「URL を開く」に {APP_URL} を入れる</li>
+          </ol>
+          <p className="muted small">ショートカットから開くと Safari で表示されます。ホーム画面の Dairys から開いた場合と、ログイン状態や下書きが別になることがあります。</p>
+        </div>
+      </section>
+      <section className="card stack">
         <span className="ribbon">天気</span>
         <div className="switch-row">
           <div>
@@ -92,11 +114,7 @@ export default function Settings({ onLogout, onOpenSpike, onOpenUnresolved }: { 
         </div>
       </section>
       <section className="card stack">
-        <span className="ribbon yellow">その他</span>
-        <button className="btn secondary" onClick={onOpenSpike}>
-          <Glyph name="flask" />
-          技術検証ページ
-        </button>
+        <span className="ribbon yellow">アカウント</span>
         <button
           className="btn danger"
           onClick={() => {

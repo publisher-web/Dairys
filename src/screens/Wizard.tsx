@@ -262,7 +262,11 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
       setDraft({ ...draft, uploaded })
       await storeDraft({ ...draft, uploaded })
       setPhase({ kind: 'editing', loaded })
-      setSaveError(`保存できませんでした（${errorText(e)}）。下書きは残っているので、もう一度お試しください。`)
+      setSaveError(
+        e instanceof TypeError
+          ? '通信できなかったため保存できませんでした。下書きはこの端末に残っています。電波の良いところで「保存する」をもう一度押してください。'
+          : `保存できませんでした（${errorText(e)}）。下書きはこの端末に残っているので、もう一度お試しください。`,
+      )
     } finally {
       setSaveProgress(null)
     }

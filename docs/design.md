@@ -39,6 +39,7 @@
 | ボタン | `.btn.primary` / `.secondary` / `.soft` / `.danger` | 高さ 52px のピル型 |
 | 罫線ノート | `.field.lined` | 今日の一言の入力欄 |
 | 下から出るシート | `.sheet`（`Picker`） | スマホでは下からスライド、PC では中央のモーダル。候補行 `.pick-row`、頭文字アバター `.avatar`（色は名前のハッシュ） |
+| シート | `Sheet`（`src/ui/Sheet.tsx`） | Visual Viewport に合わせて配置し、iPhone のキーボードの上に出す。候補・金額・写真の表示で共通 |
 | 外せるピル | `.tag.removable` | × ボタンつき。追加ボタンは点線の `.chip-add` |
 | 写真の選択エリア | `.photo-drop` | ストライプ地＋点線枠、中央にカメラタイル |
 | 金額シート | `.amount-sheet`・`.toggle`・`.amount-field` | 支出（クリーム）/ 収入（ミント）の切り替え、大きな数字入力 |
@@ -52,3 +53,4 @@
 - `Glyph`: 24px 線画（currentColor）。chevron / plus / trash / pin / people / yen / clock / check / logout / refresh / flask / photo / pencil / leaf / close / search / question
 - `WeatherIcon`: 日記の天気絵文字 → SVG（対応表は `src/ui/weather.ts`）
 - ファビコン: `public/favicon.svg`（ティールの土台＋羽根ペン）
+- アプリアイコン: `public/icon.svg`（1024角・全面塗り。iOS が角を丸める）。変更したら `npm run icons` で PNG を作り直す
