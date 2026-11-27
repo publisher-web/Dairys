@@ -44,7 +44,7 @@ export async function saveDiary(loaded: LoadedDiary, update: DiaryUpdate): Promi
     const next = applyDiary(latest.text, loaded.date, effective)
     try {
       const entry = await writeVaultFile(path, next, latest.rev ? { kind: 'update', rev: latest.rev } : { kind: 'add' })
-      await rememberWritten(loaded.date, entry.rev ?? '', isWritten(next))
+      await rememberWritten(loaded.date, entry.rev ?? '', next)
       return { text: next, rev: entry.rev ?? '', merged }
     } catch (e) {
       if (!(e instanceof DropboxError && e.isConflict)) throw e
@@ -55,38 +55,48 @@ export async function saveDiary(loaded: LoadedDiary, update: DiaryUpdate): Promi
   throw new Error('保存が混み合っています。少し待ってからもう一度ためしてね')
 }
 
-type WrittenCache = Record<string, { rev: string; written: boolean }>
+export type DayInfo = { written: boolean; mood: string | null; photos: number }
 
-const WRITTEN_KEY = 'writtenCache'
+type IndexCache = Record<string, DayInfo & { rev: string }>
 
-async function rememberWritten(date: string, rev: string, written: boolean) {
-  const cache = (await kvGet<WrittenCache>(WRITTEN_KEY)) ?? {}
-  cache[date] = { rev, written }
-  await kvSet(WRITTEN_KEY, cache)
+const INDEX_KEY = 'diaryIndex'
+
+function dayInfo(text: string, date: string): DayInfo {
+  const diary = parseDiary(text, date)
+  return { written: isWritten(text), mood: diary.mood, photos: diary.entries.reduce((n, e) => n + e.photos.length, 0) }
 }
 
-export async function writtenDates(onlySince?: string): Promise<Set<string>> {
+async function rememberWritten(date: string, rev: string, text: string) {
+  const cache = (await kvGet<IndexCache>(INDEX_KEY)) ?? {}
+  cache[date] = { rev, ...dayInfo(text, date) }
+  await kvSet(INDEX_KEY, cache)
+}
+
+export async function diaryIndex(onlySince?: string): Promise<Map<string, DayInfo>> {
   const root = await resolveVaultRoot()
   const files = (await listFolder(`${root}/${DIARY_FOLDER}`)).filter((e) => e['.tag'] === 'file' && /^\d{4}-\d{2}-\d{2}\.md$/.test(e.name))
-  const cache = (await kvGet<WrittenCache>(WRITTEN_KEY)) ?? {}
-  const result = new Set<string>()
+  const cache = (await kvGet<IndexCache>(INDEX_KEY)) ?? {}
+  const result = new Map<string, DayInfo>()
   let changed = false
   for (const f of files) {
     const date = f.name.slice(0, 10)
     if (onlySince && date < onlySince) continue
     const cached = cache[date]
     if (cached && cached.rev === f.rev) {
-      if (cached.written) result.add(date)
+      if (cached.written) result.set(date, cached)
       continue
     }
     const found = await readVaultText(f.path_display)
     if (!found) continue
-    const written = isWritten(found.text)
-    cache[date] = { rev: found.rev, written }
+    const info = dayInfo(found.text, date)
+    cache[date] = { rev: found.rev, ...info }
     changed = true
-    if (written) result.add(date)
+    if (info.written) result.set(date, info)
   }
-  if (changed) await kvSet(WRITTEN_KEY, cache)
+  if (changed) await kvSet(INDEX_KEY, cache)
   return result
 }
 
+export async function writtenDates(onlySince?: string): Promise<Set<string>> {
+  return new Set((await diaryIndex(onlySince)).keys())
+}

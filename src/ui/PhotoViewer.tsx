@@ -1,38 +1,16 @@
-import { useEffect, useState } from 'react'
-import { readVaultBlob } from '../dropbox/vault'
+import { useEffect, useRef, useState } from 'react'
 import { Glyph, TileIcon } from './Icon'
 import Sheet from './Sheet'
+import { useVaultPhotos } from './vaultPhotos'
 
-const loaded = new Map<string, string>()
-
-type Item = { status: 'loading' } | { status: 'ok'; url: string } | { status: 'error' }
-
-function initial(paths: string[]): Record<string, Item> {
-  return Object.fromEntries(paths.map((p) => [p, loaded.has(p) ? { status: 'ok', url: loaded.get(p)! } : { status: 'loading' }]))
-}
-
-export default function PhotoViewer({ paths: initialPaths, onClose }: { paths: string[]; onClose: () => void }) {
+export default function PhotoViewer({ paths: initialPaths, start, onClose }: { paths: string[]; start?: string; onClose: () => void }) {
   const [paths] = useState(initialPaths)
-  const [items, setItems] = useState<Record<string, Item>>(() => initial(initialPaths))
+  const items = useVaultPhotos(paths)
+  const startRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    let alive = true
-    const missing = paths.filter((p) => !loaded.has(p))
-    ;(async () => {
-      for (const p of missing) {
-        try {
-          const url = URL.createObjectURL(await readVaultBlob(p))
-          loaded.set(p, url)
-          if (alive) setItems((prev) => ({ ...prev, [p]: { status: 'ok', url } }))
-        } catch {
-          if (alive) setItems((prev) => ({ ...prev, [p]: { status: 'error' } }))
-        }
-      }
-    })()
-    return () => {
-      alive = false
-    }
-  }, [paths])
+    startRef.current?.scrollIntoView({ block: 'start' })
+  }, [])
 
   return (
     <Sheet label="写真" onClose={onClose} className="photo-viewer">
@@ -47,7 +25,7 @@ export default function PhotoViewer({ paths: initialPaths, onClose }: { paths: s
         {paths.map((p) => {
           const item = items[p] ?? { status: 'loading' }
           return (
-            <figure key={p} className="viewer-item">
+            <figure key={p} className="viewer-item" ref={p === start ? startRef : undefined}>
               {item.status === 'ok' ? <img src={item.url} alt="" /> : <div className={`viewer-placeholder ${item.status}`}>{item.status === 'error' ? '読み込めませんでした' : '読み込んでいます…'}</div>}
             </figure>
           )

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { handleRedirect, isConfigured, isLoggedIn } from './dropbox/auth'
 import { resolveVaultRoot } from './dropbox/vault'
+import { monthKey, toDateString } from './lib/date'
+import Calendar from './screens/Calendar'
 import Directory, { type DirectoryTab } from './screens/Directory'
 import Home from './screens/Home'
 import Login from './screens/Login'
@@ -22,7 +24,8 @@ type Screen =
   | { kind: 'directory' }
   | { kind: 'person'; person: Person }
   | { kind: 'place'; place: Place }
-  | { kind: 'wizard'; date: string }
+  | { kind: 'calendar' }
+  | { kind: 'wizard'; date: string; from: 'home' | 'calendar' }
 
 export type VaultState = { kind: 'wait' } | { kind: 'ok' } | { kind: 'ng'; message: string }
 
@@ -34,6 +37,7 @@ const TITLES: Record<Screen['kind'], string> = {
   directory: '人物・場所',
   person: '人物',
   place: '場所',
+  calendar: 'カレンダー',
   wizard: 'ふりかえり',
 }
 
@@ -41,6 +45,8 @@ export default function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn())
   const [screen, setScreen] = useState<Screen>({ kind: 'home' })
   const [tab, setTab] = useState<DirectoryTab>('people')
+  const [today] = useState(() => toDateString(new Date()))
+  const [month, setMonth] = useState(() => monthKey(today))
   const [homeKey, setHomeKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [vault, setVault] = useState<VaultState>({ kind: 'wait' })
@@ -112,6 +118,11 @@ export default function App() {
         <h1>{loggedIn ? TITLES[screen.kind] : 'Dairys'}</h1>
         <div className="slot-right">
           {onHome && (
+            <button className="tile-button" aria-label="カレンダー" onClick={() => setScreen({ kind: 'calendar' })}>
+              <TileIcon name="calendar" size={40} />
+            </button>
+          )}
+          {onHome && (
             <button className="tile-button" aria-label="設定" onClick={() => setScreen({ kind: 'settings' })}>
               <TileIcon name="gear" size={40} />
             </button>
@@ -145,10 +156,12 @@ export default function App() {
           <PersonEdit key={screen.person.path} person={screen.person} onDeleted={() => setScreen({ kind: 'directory' })} />
         ) : screen.kind === 'place' ? (
           <PlaceEdit key={screen.place.path} place={screen.place} onDeleted={() => setScreen({ kind: 'directory' })} />
+        ) : screen.kind === 'calendar' ? (
+          <Calendar vault={vault} today={today} month={month} onMonth={setMonth} onWrite={(date) => setScreen({ kind: 'wizard', date, from: 'calendar' })} />
         ) : screen.kind === 'wizard' ? (
-          <Wizard date={screen.date} onExit={toHome} />
+          <Wizard date={screen.date} onExit={screen.from === 'calendar' ? () => setScreen({ kind: 'calendar' }) : toHome} />
         ) : (
-          <Home key={homeKey} vault={vault} onStart={(date) => setScreen({ kind: 'wizard', date })} />
+          <Home key={homeKey} vault={vault} onStart={(date) => setScreen({ kind: 'wizard', date, from: 'home' })} />
         )}
       </main>
     </div>

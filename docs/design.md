@@ -48,6 +48,8 @@
 | フォーム | `FieldRow`／`TextField`／`ListField`／`Segments`／`FamilyField`（`src/ui/Fields.tsx`） | ラベル `.form-label`、補足 `.form-note`。選択肢は `.tag-button`（選択中ミント）。家族欄は「人物から選ぶ」「文字で追加」のチップ |
 | 保存バー | `.save-bar` | 編集画面の下に貼り付く半透明の帯。未保存の変更があると表示 |
 | 写真の一覧 | `.photo-grid` / `.photo-strip` / `.photo-cell` | 3列グリッド（写真ステップ）と横並び（カード・確認画面）。左下に時刻ピル、右上に × |
+| カレンダー | `.cal-grid` / `.cal-day`（`.written` ティール淡色・`.today` ティール枠・`.future` 薄く）/ `.cal-photo` | 日曜はコーラル、土曜はティール。左右スワイプで月移動 |
+| 日記パネル | `DayPanel`（`Sheet` を利用）/ `.day-body` / `.day-quote` / `.day-photos` | 本文は `.day-body` 内でスクロール。写真はタップで `PhotoViewer`（その写真から表示） |
 
 ## アイコン（`src/ui/Icon.tsx`）
 

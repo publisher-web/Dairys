@@ -43,3 +43,25 @@ export function streakDays(written: Set<string>, today: string): number {
   }
   return n
 }
+
+export function monthKey(s: string): string {
+  return s.slice(0, 7)
+}
+
+export function addMonths(month: string, n: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(y, m - 1 + n, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function monthGrid(month: string): (string | null)[][] {
+  const [y, m] = month.split('-').map(Number)
+  const first = new Date(y, m - 1, 1)
+  const days = new Date(y, m, 0).getDate()
+  const cells: (string | null)[] = Array<string | null>(first.getDay()).fill(null)
+  for (let d = 1; d <= days; d++) cells.push(`${month}-${String(d).padStart(2, '0')}`)
+  while (cells.length % 7 !== 0) cells.push(null)
+  const weeks: (string | null)[][] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  return weeks
+}

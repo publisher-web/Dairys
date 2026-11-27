@@ -103,7 +103,7 @@ button {
 
 .titlebar {
   display: grid;
-  grid-template-columns: 48px 1fr 48px;
+  grid-template-columns: 92px 1fr 92px;
   align-items: center;
   padding: 6px 18px 4px;
 }
@@ -118,6 +118,13 @@ button {
 
 .titlebar .slot-right {
   justify-self: end;
+  display: flex;
+  gap: 6px;
+}
+
+.round-button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .tile-button {
@@ -1603,4 +1610,237 @@ input[type='date'].field::-webkit-date-and-time-value {
 .field-with-clear .field {
   flex: 1;
   min-width: 0;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cal-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding-bottom: 2px;
+}
+
+.cal-weekday.sun,
+.cal-day.sun .cal-num {
+  color: var(--coral);
+}
+
+.cal-weekday.sat,
+.cal-day.sat .cal-num {
+  color: var(--teal);
+}
+
+.cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 58px;
+  padding: 5px 0 4px;
+  border: none;
+  border-radius: 16px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.cal-day.blank {
+  cursor: default;
+}
+
+.cal-day:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.cal-day.written {
+  background: var(--teal-soft);
+}
+
+.cal-day.today {
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+
+.cal-day.future {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.cal-day:disabled:not(.future) {
+  cursor: default;
+}
+
+.cal-num {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cal-mark {
+  display: grid;
+  place-items: center;
+  height: 26px;
+}
+
+.cal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.cal-photo {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 0 1px var(--teal-soft);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--teal-deep);
+}
+
+.cal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-panel {
+  max-width: 520px;
+}
+
+@media (max-width: 559px) {
+  .day-panel.filled {
+    min-height: 60dvh;
+  }
+}
+
+.day-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.day-loading {
+  padding: 32px 0;
+}
+
+.day-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0 8px;
+  color: var(--ink-soft);
+}
+
+.day-empty .btn {
+  align-self: stretch;
+}
+
+.day-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.day-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.day-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: 0 0 0 1.5px var(--line);
+}
+
+.day-quote p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.day-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 6px;
+}
+
+.day-photo {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--line);
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.day-photo.loading {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.day-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.day-extra .value {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.day-extra-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
