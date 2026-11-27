@@ -1,45 +1,16 @@
 import { useMemo, useRef, useState } from 'react'
 import type { LinkRef } from '../diary/markdown'
-import type { Person, Place, PlaceKind } from '../vault/directory'
+import type { Person, Place } from '../vault/directory'
 import { rankByUsage } from '../vault/links'
 import { linkLabel, linkOf } from '../vault/refs'
 import { displayName, hasExactName, matches } from '../vault/search'
+import Avatar from './Avatar'
+import { subText } from '../vault/labels'
 import { useDirectory } from '../vault/useDirectory'
 import { Glyph, TileIcon } from './Icon'
 import Sheet from './Sheet'
 
 type Item = Person | Place
-
-const KIND_LABEL: Record<Item['kind'], string> = { person: '人物', place: '場所', school: '学校', company: '会社' }
-const AVATAR_COLORS = ['#f6b99b', '#9fddc0', '#a9d6ee', '#cbc2ec', '#ffe08f', '#f7c3cd']
-const PLACE_COLORS: Record<PlaceKind, string> = { place: '#f7c9a8', school: '#a9d6ee', company: '#cbc2ec' }
-
-function hash(s: string): number {
-  let h = 0
-  for (const ch of s) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0
-  return h
-}
-
-function Avatar({ item }: { item: Item }) {
-  if (item.kind !== 'person')
-    return (
-      <span className="avatar" style={{ background: PLACE_COLORS[item.kind] }}>
-        <Glyph name="pin" size={18} />
-      </span>
-    )
-  const label = displayName(item)
-  return (
-    <span className="avatar" style={{ background: AVATAR_COLORS[hash(item.name) % AVATAR_COLORS.length] }}>
-      {[...label][0]}
-    </span>
-  )
-}
-
-function subText(item: Item): string {
-  const display = displayName(item)
-  if (item.kind === 'person') return display !== item.name ? item.name : (item.reading ?? '')
-  return [KIND_LABEL[item.kind], display !== item.name ? item.name : null].filter(Boolean).join('・')
-}
 
 function collate(a: Item, b: Item): number {
   return (a.reading ?? a.name).localeCompare(b.reading ?? b.name, 'ja')
@@ -47,19 +18,20 @@ function collate(a: Item, b: Item): number {
 
 type Props = {
   mode: 'people' | 'place'
+  title?: string
   selected: LinkRef[]
   onDone: (selected: LinkRef[]) => void
   onClose: () => void
 }
 
-export default function Picker({ mode, selected, onDone, onClose }: Props) {
+export default function Picker({ mode, title: titleProp, selected, onDone, onClose }: Props) {
   const dir = useDirectory()
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<LinkRef[]>(selected)
   const inputRef = useRef<HTMLInputElement>(null)
   const items: Item[] = mode === 'people' ? dir.people : dir.places
   const multi = mode === 'people'
-  const title = mode === 'people' ? '一緒にいた人' : '場所'
+  const title = titleProp ?? (mode === 'people' ? '一緒にいた人' : '場所')
 
   const recent = useMemo(() => rankByUsage(items, dir.usage).slice(0, 8), [items, dir.usage])
   const all = useMemo(() => [...items].sort(collate), [items])
@@ -167,7 +139,7 @@ export default function Picker({ mode, selected, onDone, onClose }: Props) {
               </span>
               <span className="grow">
                 <span className="pick-name">「{trimmed}」を名前だけで追加</span>
-                <span className="pick-sub">ノートはあとから PC で作れます</span>
+                <span className="pick-sub">ノートはあとから「人物・場所」で作れます</span>
               </span>
               <span className="tag cream">未登録</span>
             </button>

@@ -4,11 +4,14 @@ import { forgetVaultRoot, resolveVaultRoot } from '../dropbox/vault'
 import { isWeatherEnabled, setWeatherEnabled } from '../diary/weather'
 import { Glyph } from '../ui/Icon'
 
-const APP_URL = 'https://publisher-web.github.io/Dairys/'
 import { loadDirectory } from '../vault/directory'
 import { useDirectory } from '../vault/useDirectory'
 
-export default function Settings({ onLogout, onOpenUnresolved }: { onLogout: () => void; onOpenUnresolved: () => void }) {
+const APP_URL = 'https://publisher-web.github.io/Dairys/'
+
+type Props = { onLogout: () => void; onOpenUnresolved: () => void; onOpenDirectory: () => void; onOpenMaintenance: () => void }
+
+export default function Settings({ onLogout, onOpenUnresolved, onOpenDirectory, onOpenMaintenance }: Props) {
   const dir = useDirectory()
   const [weatherOn, setWeatherOn] = useState(isWeatherEnabled)
   const [root, setRoot] = useState<string | null>(null)
@@ -65,9 +68,17 @@ export default function Settings({ onLogout, onOpenUnresolved }: { onLogout: () 
           <span className="tag cream">未登録</span>
           <span className="value">{dir.status === 'ready' ? `${dir.unresolved.length}件` : '－'}</span>
         </div>
+        <button className="btn secondary" onClick={onOpenDirectory}>
+          <Glyph name="people" />
+          人物・場所の一覧
+        </button>
         <button className="btn secondary" onClick={onOpenUnresolved}>
           <Glyph name="question" />
           未登録の名前を見る
+        </button>
+        <button className="btn secondary" onClick={onOpenMaintenance}>
+          <Glyph name="pencil" />
+          ノートの整備（表の更新・間柄の下書き）
         </button>
         <button className="btn secondary" disabled={dir.status === 'loading'} onClick={() => loadDirectory(true)}>
           <Glyph name="refresh" />

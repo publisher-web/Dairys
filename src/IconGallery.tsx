@@ -2,7 +2,7 @@
 import { Glyph, MoodIcon, TileIcon, WeatherIcon, type GlyphName, type TileName } from './ui/Icon'
 
 const TILES: TileName[] = ['calendar', 'quill', 'leaf', 'gear', 'flame', 'clock', 'bubble', 'smile', 'clipboard', 'stamp', 'cloud', 'moon', 'people', 'pin', 'camera', 'coin']
-const GLYPHS: GlyphName[] = ['chevronLeft', 'chevronRight', 'plus', 'trash', 'pin', 'people', 'yen', 'clock', 'check', 'logout', 'refresh', 'flask', 'photo', 'pencil', 'leaf', 'close', 'search', 'question']
+const GLYPHS: GlyphName[] = ['chevronLeft', 'chevronRight', 'plus', 'trash', 'pin', 'people', 'yen', 'clock', 'check', 'logout', 'refresh', 'flask', 'photo', 'pencil', 'leaf', 'close', 'search', 'question', 'home', 'chevronDown', 'map', 'link']
 const WEATHER = ['☀️', '🌤️', '☁️', '🌫️', '☔️', '❄️', '⛈️']
 
 export default function IconGallery() {

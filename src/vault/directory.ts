@@ -1,4 +1,4 @@
-import { DIARY_FOLDER } from '../config'
+import { COMPANIES_FOLDER, DIARY_FOLDER, EVENTS_FOLDER, PEOPLE_FOLDER, PLACES_FOLDER, SCHOOLS_FOLDER } from '../config'
 import { DropboxError, downloadText, listFolder, listFolderRecursive, type Entry } from '../dropbox/api'
 import { resolveVaultRoot } from '../dropbox/vault'
 import { kvGet, kvSet } from '../storage/kv'
@@ -7,22 +7,23 @@ import { buildUsage, extractLinkTargets, unresolvedLinks, type LinkUsage, type U
 
 export type PlaceKind = 'place' | 'school' | 'company'
 
-export type Person = { kind: 'person'; name: string; reading: string | null; aliases: string[] }
-export type Place = { kind: PlaceKind; name: string; reading: string | null; aliases: string[] }
+type NoteBase = { name: string; path: string; reading: string | null; aliases: string[] }
+export type Person = NoteBase & { kind: 'person'; relation: string | null }
+export type Place = NoteBase & { kind: PlaceKind; category: string | null }
 
-export const PEOPLE_FOLDER = '30_HumanNetwork/10_People'
-export const EVENTS_FOLDER = '30_HumanNetwork/30_Events'
 export const PLACE_FOLDERS: { path: string; kind: PlaceKind }[] = [
-  { path: '30_HumanNetwork/40_Places', kind: 'place' },
-  { path: '30_HumanNetwork/15_Schools', kind: 'school' },
-  { path: '30_HumanNetwork/20_Companies', kind: 'company' },
+  { path: PLACES_FOLDER, kind: 'place' },
+  { path: SCHOOLS_FOLDER, kind: 'school' },
+  { path: COMPANIES_FOLDER, kind: 'company' },
 ]
 
-type NoteCache = { rev: string; reading: string | null; aliases: string[] }
+export type LinkSource = { path: string; date: string; targets: string[] }
+
+type NoteCache = { rev: string; reading: string | null; aliases: string[]; relation: string | null; category: string | null }
 type LinkCache = { rev: string; targets: string[] }
 type Cache = { notes: Record<string, NoteCache>; links: Record<string, LinkCache> }
 
-const CACHE_KEY = 'directory:v1'
+const CACHE_KEY = 'directory:v2'
 const CONCURRENCY = 8
 
 export type DirectoryState = {
@@ -32,6 +33,7 @@ export type DirectoryState = {
   places: Place[]
   usage: Map<string, LinkUsage>
   unresolved: Unresolved[]
+  sources: LinkSource[]
   error: string | null
 }
 
@@ -42,6 +44,7 @@ let state: DirectoryState = {
   places: [],
   usage: new Map(),
   unresolved: [],
+  sources: [],
   error: null,
 }
 const listeners = new Set<() => void>()
@@ -102,11 +105,12 @@ async function load(refresh: boolean) {
   const keyOf = (f: Entry) => f.path_lower ?? f.path_display
   const toItem = (f: Entry) => {
     const c = cache.notes[keyOf(f)]
-    return { name: baseName(f), reading: c?.reading ?? null, aliases: c?.aliases ?? [] }
+    return { name: baseName(f), path: f.path_display, reading: c?.reading ?? null, aliases: c?.aliases ?? [] }
   }
-  const buildPeople = (): Person[] => peopleFiles.map((f) => ({ kind: 'person', ...toItem(f) }))
-  const buildPlaces = (): Place[] => placeGroups.flatMap((g) => g.files.map((f) => ({ kind: g.kind, ...toItem(f) })))
-  const buildUsageNow = () => buildUsage(linkFiles.map((f) => ({ date: dateOf(f)!, targets: cache.links[keyOf(f)]?.targets ?? [] })))
+  const buildPeople = (): Person[] => peopleFiles.map((f) => ({ kind: 'person', ...toItem(f), relation: cache.notes[keyOf(f)]?.relation ?? null }))
+  const buildPlaces = (): Place[] => placeGroups.flatMap((g) => g.files.map((f) => ({ kind: g.kind, ...toItem(f), category: cache.notes[keyOf(f)]?.category ?? null })))
+  const buildSources = (): LinkSource[] => linkFiles.map((f) => ({ path: f.path_display, date: dateOf(f)!, targets: cache.links[keyOf(f)]?.targets ?? [] }))
+  const buildUsageNow = () => buildUsage(buildSources())
 
   const stalePeople = peopleFiles.filter((f) => cache.notes[keyOf(f)]?.rev !== f.rev)
   const stalePlaces = placeGroups.flatMap((g) => g.files).filter((f) => cache.notes[keyOf(f)]?.rev !== f.rev)
@@ -120,7 +124,7 @@ async function load(refresh: boolean) {
   }
   const fetchNote = async (f: Entry) => {
     const fm = frontmatterOf(await downloadText(f.path_display))
-    cache.notes[keyOf(f)] = { rev: f.rev ?? '', reading: readScalar(fm, 'reading'), aliases: readList(fm, 'aliases') }
+    cache.notes[keyOf(f)] = { rev: f.rev ?? '', reading: readScalar(fm, 'reading'), aliases: readList(fm, 'aliases'), relation: readScalar(fm, 'relation'), category: readScalar(fm, '種別') }
     tick()
   }
 
@@ -145,11 +149,15 @@ async function load(refresh: boolean) {
     noteFiles.forEach((f) => allNames.add(baseName(f)))
   }
 
-  setState({ status: 'ready', usage, unresolved: unresolvedLinks(usage, allNames) })
+  setState({ status: 'ready', usage, sources: buildSources(), unresolved: unresolvedLinks(usage, allNames) })
 }
 
 async function listFolderRecursiveNames(root: string): Promise<string[]> {
   return (await listFolderRecursive(root)).filter((e) => e['.tag'] === 'file' && e.name.toLowerCase().endsWith('.md')).map((e) => e.name.replace(/\.md$/i, ''))
+}
+
+export function reloadDirectory(): Promise<void> {
+  return (running ?? Promise.resolve()).then(() => loadDirectory())
 }
 
 export function loadDirectory(refresh = false): Promise<void> {

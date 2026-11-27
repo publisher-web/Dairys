@@ -25,7 +25,7 @@ export function readList(fm: string[], key: string): string[] {
   const i = keyIndex(fm, key)
   if (i < 0) return []
   const inline = fm[i].slice(key.length + 1).trim()
-  if (inline.startsWith('[') && inline.endsWith(']')) {
+  if (inline.startsWith('[') && inline.endsWith(']') && !inline.startsWith('[[')) {
     return inline
       .slice(1, -1)
       .split(',')
@@ -42,4 +42,41 @@ export function readList(fm: string[], key: string): string[] {
     if (v) out.push(v)
   }
   return out
+}
+
+export function yamlScalar(value: string): string {
+  const v = value.trim()
+  const plain = !/^[\s[\]{}!&*#|>'"%@`,?:-]|:\s|:$|\s#|^(true|false|null|yes|no|on|off|~)$/i.test(v) && !/^[+-]?\d+(\.\d+)?$/.test(v)
+  if (plain || /^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+  return `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+function blockEnd(fm: string[], i: number): number {
+  let end = i + 1
+  while (end < fm.length && /^(\s+\S|\s*-(\s|$))/.test(fm[end]) && !/^\S[^:]*:/.test(fm[end])) end++
+  return end
+}
+
+function insertAt(fm: string[], after: string[]): number {
+  for (const key of after) {
+    const i = keyIndex(fm, key)
+    if (i >= 0) return blockEnd(fm, i)
+  }
+  return fm.length
+}
+
+function replaceKey(fm: string[], key: string, lines: string[], after: string[]) {
+  const i = keyIndex(fm, key)
+  if (i >= 0) fm.splice(i, blockEnd(fm, i) - i, ...lines)
+  else fm.splice(insertAt(fm, after), 0, ...lines)
+}
+
+export function writeScalar(fm: string[], key: string, value: string | null, after: string[] = []) {
+  const v = value?.trim() ?? ''
+  replaceKey(fm, key, [v ? `${key}: ${yamlScalar(v)}` : `${key}:`], after)
+}
+
+export function writeList(fm: string[], key: string, values: string[], after: string[] = []) {
+  const items = values.map((v) => v.trim()).filter((v) => v.length > 0)
+  replaceKey(fm, key, items.length > 0 ? [`${key}:`, ...items.map((v) => `  - ${yamlScalar(v)}`)] : [`${key}:`], after)
 }

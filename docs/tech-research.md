@@ -41,3 +41,25 @@
 | 項目 | 内容 | ラベル |
 |---|---|---|
 | GitHub Pages | 無料プランでは Public リポジトリが必要 | [推測]（要裏取り） |
+
+## Remotely Save の同期保護（2026-11-27 確認）
+
+| 項目 | 内容 | ラベル | 出典 |
+|---|---|---|---|
+| 変更割合の保護 | 既定 `protectModifyPercentage: 50`。同期計画のうち「変更・削除されるファイル数」が全ファイル数の 50% 以上なら同期を中止する | [確証] | [src/main.ts](https://github.com/remotely-save/remotely-save/blob/master/src/main.ts)、[pro/src/sync.ts](https://github.com/remotely-save/remotely-save/blob/master/pro/src/sync.ts) の `splitFourStepsOnEntityMappings` |
+| 数えられるもの | `local_is_modified_then_push` だけでなく **`remote_is_modified_then_pull`**（Dropbox 側で変わったファイルを取り込む場合）も数える。新規作成（`*_created_then_*`）は数えない | [確証] | 同上 |
+| Dairys での影響 | Vault は約490ファイル。人物52＋場所204件を一度に書き換えると 50% を超えるため、「ノートの整備」は人物・場所を分けて実行し、間に各端末で同期する | [確証]（件数は 2026-11-27 時点） | — |
+
+## Dropbox の書き込み制限
+
+| 項目 | 内容 | ラベル |
+|---|---|---|
+| 同時書き込み | 同じ名前空間への並行アップロードは `too_many_write_operations`（429）になりうる。一括更新は1件ずつ順番に書き、429 は `Retry-After` に従って最大5回再試行する（`src/dropbox/api.ts`） | [一般知識] |
+
+## Dataview（人物・場所ノートの表）
+
+| 項目 | 内容 | ラベル |
+|---|---|---|
+| 複数フォルダ | `FROM "A" OR "B"` で複数フォルダを対象にできる | [一般知識] |
+| 本文リンク | `contains(file.outlinks, this.file.link)` で本文中の `[[リンク]]` から逆引きできる（アプリの日記はこれで拾う） | [一般知識] |
+| 項目がないノート | 日記には `human`／`place` がないため `default(human, [])` で空配列にしてから `contains` する | [一般知識] |

@@ -108,16 +108,30 @@ export async function downloadBlob(path: string): Promise<Blob> {
   return await res.blob()
 }
 
+const MAX_RATE_RETRIES = 5
+
+function retryDelayMs(res: Response, attempt: number): number {
+  const header = Number(res.headers.get('Retry-After'))
+  return (Number.isFinite(header) && header > 0 ? header : 2 ** attempt) * 1000
+}
+
 export async function upload(path: string, content: Blob | string, mode: WriteMode): Promise<Entry> {
-  const res = await fetch(`${CONTENT_BASE}/files/upload`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${await getAccessToken()}`,
-      'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': headerSafeJson({ path, mode: toWriteMode(mode), autorename: false, mute: true }),
-    },
-    body: typeof content === 'string' ? new TextEncoder().encode(content) : content,
-  })
-  if (!res.ok) throw new DropboxError('files/upload', res.status, await res.text())
-  return (await res.json()) as Entry
+  const body = typeof content === 'string' ? new TextEncoder().encode(content) : content
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${CONTENT_BASE}/files/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${await getAccessToken()}`,
+        'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': headerSafeJson({ path, mode: toWriteMode(mode), autorename: false, mute: true }),
+      },
+      body,
+    })
+    if (res.ok) return (await res.json()) as Entry
+    if (res.status === 429 && attempt < MAX_RATE_RETRIES) {
+      await new Promise((r) => setTimeout(r, retryDelayMs(res, attempt)))
+      continue
+    }
+    throw new DropboxError('files/upload', res.status, await res.text())
+  }
 }

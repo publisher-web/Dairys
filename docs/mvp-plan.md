@@ -128,3 +128,11 @@
 - ウィザードのタイトルバー左にホームボタン。進捗バーの各区切りを押すとその項目へ移動
 - 「何がありましたか？」を6行（最小184px）に
 - ホームのお知らせ（未保存の下書き・昨日がまだ）を「日記を書く」カードの下へ。カードの位置は常に固定（ユーザー指定）
+
+### 人物・場所の一覧・編集（2026-11-27、ユーザー依頼）
+
+- 一覧 `screens/Directory.tsx`、編集 `PersonEdit.tsx`／`PlaceEdit.tsx`、未登録からの作成 `Unresolved.tsx`、一括更新 `Maintenance.tsx`
+- ノートの読み書きは `vault/person.ts`／`place.ts`（変更した項目だけ書き換え、他の行はそのまま）、Dropbox 入出力と競合時の再適用は `vault/notes.ts`
+- テスト: `vault/notes.test.ts`（架空データ）、`vault/notes.local.test.ts`（PC の Vault 実データで「変更なしならファイルが一切変わらない」「表の書き換えで他の部分が変わらない」を確認。gitignore 済み）
+- 画面確認: Dropbox API をダミー応答に差し替えた一時プレビューを Edge ヘッドレス（DevTools プロトコル）で操作し、作成・保存・リンク書き換え・整備の出力 Markdown を確認した（プレビューはコミットしていない）。ヘッドレス Edge は最小幅が約500pxで、`--window-size=390` だと右が切れる。CDP の `Emulation.setDeviceMetricsOverride` を使うこと
+
