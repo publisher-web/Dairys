@@ -476,21 +476,31 @@ p {
 .band .progress {
   display: flex;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
-.band .progress span {
+.band .progress button {
   flex: 1;
+  height: 22px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.band .progress button::before {
+  content: '';
+  display: block;
   height: 6px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.3);
 }
 
-.band .progress span.done {
+.band .progress button.done::before {
   background: rgba(255, 255, 255, 0.75);
 }
 
-.band .progress span.now {
+.band .progress button.now::before {
   background: #ffe08f;
 }
 
@@ -1307,7 +1317,7 @@ button:focus-visible,
 }
 
 .entry-text {
-  min-height: 118px;
+  min-height: 184px;
 }
 
 .lined {

@@ -65,6 +65,11 @@ export default function App() {
               <Glyph name="chevronLeft" />
             </button>
           )}
+          {loggedIn && screen.kind === 'wizard' && (
+            <button className="round-button" aria-label="ホームに戻る" onClick={toHome}>
+              <Glyph name="home" />
+            </button>
+          )}
         </div>
         <h1>{loggedIn ? TITLES[screen.kind] : 'Dairys'}</h1>
         <div className="slot-right">

@@ -254,13 +254,14 @@ export function MoodIcon({ id, size = 56 }: { id: MoodId; size?: number }) {
   )
 }
 
-export type GlyphName = 'chevronLeft' | 'chevronRight' | 'plus' | 'trash' | 'pin' | 'people' | 'yen' | 'clock' | 'check' | 'logout' | 'refresh' | 'flask' | 'photo' | 'pencil' | 'leaf' | 'close' | 'search' | 'question'
+export type GlyphName = 'chevronLeft' | 'chevronRight' | 'plus' | 'trash' | 'pin' | 'people' | 'yen' | 'clock' | 'check' | 'logout' | 'refresh' | 'flask' | 'photo' | 'pencil' | 'leaf' | 'close' | 'search' | 'question' | 'home'
 
 const GLYPHS: Record<GlyphName, ReactNode> = {
   chevronLeft: <path d="M14.5 5.5 8 12l6.5 6.5" />,
   chevronRight: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
   plus: <path d="M12 5.5v13M5.5 12h13" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  home: <path d="M4.5 11.2 12 4.8l7.5 6.4M6.6 9.6v8.6a1.3 1.3 0 0 0 1.3 1.3h2.9v-5h2.4v5h2.9a1.3 1.3 0 0 0 1.3-1.3V9.6" />,
   search: (
     <>
       <circle cx="10.6" cy="10.6" r="6" />

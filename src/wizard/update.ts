@@ -1,4 +1,4 @@
-import { sortEntries, type DiaryUpdate } from '../diary/markdown'
+import { applyDiary, sortEntries, type DiaryUpdate } from '../diary/markdown'
 import type { PendingPhoto } from '../diary/photos'
 import type { LoadedDiary } from '../diary/store'
 import { weatherAt, type WeatherData } from '../diary/weather'
@@ -24,4 +24,8 @@ export function buildUpdate(draft: Draft, loaded: LoadedDiary, photoPath: (p: Pe
     )
   if (Object.keys(update).length > 0 && weather?.daily && !loaded.diary.weather) update.weather = weather.daily
   return update
+}
+
+export function hasRealChanges(draft: Draft, loaded: LoadedDiary): boolean {
+  return applyDiary(loaded.text, loaded.date, buildUpdate(draft, loaded)) !== applyDiary(loaded.text, loaded.date, {})
 }

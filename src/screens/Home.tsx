@@ -63,32 +63,6 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
         <p className="hero-title">{hello.text}</p>
       </div>
 
-      {otherDrafts.length > 0 && (
-        <div className="notice">
-          <TileIcon name="quill" size={36} />
-          <div className="grow stack tight">
-            <p>保存していない下書きがあります</p>
-            <div className="chips">
-              {otherDrafts.slice(0, 4).map((d) => (
-                <button key={d} className="tag cream tag-button" onClick={() => setDate(d)}>
-                  {shortDate(d, today)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {missedYesterday && !otherDrafts.includes(yesterday) && (
-        <div className="notice">
-          <TileIcon name="quill" size={36} />
-          <p className="grow">昨日の日記がまだです</p>
-          <button className="btn soft" onClick={() => setDate(yesterday)}>
-            昨日を書く
-          </button>
-        </div>
-      )}
-
       <section className="card stack">
         <span className="ribbon">日記を書く</span>
         <div className="date-heading">
@@ -119,6 +93,32 @@ export default function Home({ vault, onStart }: { vault: VaultState; onStart: (
           {hasDraft ? '続きを書く' : isDone ? '書き足す・直す' : 'ふりかえりを始める'}
         </button>
       </section>
+
+      {otherDrafts.length > 0 && (
+        <div className="notice">
+          <TileIcon name="quill" size={36} />
+          <div className="grow stack tight">
+            <p>保存していない下書きがあります</p>
+            <div className="chips">
+              {otherDrafts.slice(0, 4).map((d) => (
+                <button key={d} className="tag cream tag-button" onClick={() => setDate(d)}>
+                  {shortDate(d, today)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {missedYesterday && !otherDrafts.includes(yesterday) && (
+        <div className="notice">
+          <TileIcon name="quill" size={36} />
+          <p className="grow">昨日の日記がまだです</p>
+          <button className="btn soft" onClick={() => setDate(yesterday)}>
+            昨日を書く
+          </button>
+        </div>
+      )}
 
       {streak !== null && (
         <div className="streak-line">

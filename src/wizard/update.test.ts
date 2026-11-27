@@ -3,7 +3,7 @@ import { parseEntries, type Entry } from '../diary/markdown'
 import type { LoadedDiary } from '../diary/store'
 import type { WeatherData } from '../diary/weather'
 import type { Draft, EditableEntry } from './draft'
-import { buildUpdate } from './update'
+import { buildUpdate, hasRealChanges } from './update'
 
 const weather: WeatherData = { date: '2026-11-27', daily: '☔️', hourly: Array.from({ length: 24 }, (_, h) => (h < 12 ? '☀️' : '☔️')) }
 
@@ -48,5 +48,26 @@ describe('buildUpdate weather', () => {
     const photo = { id: 'p1', blob: new Blob(), width: 1, height: 1, taken: null }
     const u = buildUpdate(draft({ entries: [{ ...entry({}), pendingPhotos: [photo] }], entriesTouched: true }), loaded(), (p) => `attachments/${p.id}.jpg`)
     expect(u.entries![0].photos).toEqual(['attachments/p1.jpg'])
+  })
+})
+
+describe('hasRealChanges', () => {
+  const text = ['---', 'type: diary', 'date: "2026-11-27"', 'mood: 🙂', '---', '', '## 📝 今日の一言', '- 一言', '', '## 🕒 できごと', '- 08:00', '  朝', ''].join('\n')
+  const base: LoadedDiary = { date: '2026-11-27', text, rev: 'r1', diary: { date: '2026-11-27', mood: '🙂', weather: null, oneLiner: '一言', entries: parseEntries(['- 08:00', '  朝', '']).entries } }
+  const fresh = (patch: Partial<Draft>) => draft({ mood: '🙂', oneLiner: '一言', entries: base.diary.entries.map((e) => ({ ...e, key: 'k' })), ...patch })
+
+  it('is false when only touched without changing the text', () => {
+    expect(hasRealChanges(fresh({ moodTouched: true }), base)).toBe(false)
+    expect(hasRealChanges(fresh({ oneLinerTouched: true, oneLiner: '一言 ' }), base)).toBe(false)
+    expect(hasRealChanges(fresh({ entriesTouched: true, entries: [...base.diary.entries.map((e) => ({ ...e, key: 'k' })), entry({})] }), base)).toBe(false)
+  })
+
+  it('is true when the saved text would change', () => {
+    expect(hasRealChanges(fresh({ mood: '😆', moodTouched: true }), base)).toBe(true)
+    expect(hasRealChanges(fresh({ entriesTouched: true, entries: [...base.diary.entries.map((e) => ({ ...e, key: 'k' })), entry({ text: ['夜'] })] }), base)).toBe(true)
+  })
+
+  it('treats an empty new diary as unchanged', () => {
+    expect(hasRealChanges(draft({ entriesTouched: true, entries: [entry({})] }), loaded())).toBe(false)
   })
 })

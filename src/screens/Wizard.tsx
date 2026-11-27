@@ -12,7 +12,7 @@ import PhotoViewer from '../ui/PhotoViewer'
 import Picker from '../ui/Picker'
 import { isKnownWeather, WEATHER_LABEL, weatherKind } from '../ui/weather'
 import { linkLabel } from '../vault/refs'
-import { buildUpdate, PENDING_PREFIX, previewPath } from '../wizard/update'
+import { buildUpdate, hasRealChanges, PENDING_PREFIX, previewPath } from '../wizard/update'
 import { clearDraft, isTouched, loadDraft, newKey, STEPS, storeDraft, type Draft, type EditableEntry, type StepId } from '../wizard/draft'
 
 const STEP_META: Record<StepId, { icon: TileName; title: string; hint: string }> = {
@@ -108,11 +108,13 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
     Promise.all([loadDiary(date), loadDraft(date)])
       .then(([loaded, saved]) => {
         if (!alive) return
-        if (isTouched(saved)) setPhase({ kind: 'resume', loaded, draft: saved! })
-        else {
-          setDraft(freshDraft(loaded))
-          setPhase({ kind: 'editing', loaded })
+        if (saved && isTouched(saved) && hasRealChanges(resumeDraft(saved, loaded), loaded)) {
+          setPhase({ kind: 'resume', loaded, draft: saved })
+          return
         }
+        if (saved) clearDraft(date)
+        setDraft(freshDraft(loaded))
+        setPhase({ kind: 'editing', loaded })
       })
       .catch((e: unknown) => alive && setPhase({ kind: 'error', message: errorText(e) }))
     return () => {
@@ -122,12 +124,13 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
 
   useEffect(() => {
     if (!draft || phase.kind !== 'editing' || !isTouched(draft)) return
+    const base = phase.loaded
     if (saveTimer.current) window.clearTimeout(saveTimer.current)
-    saveTimer.current = window.setTimeout(() => storeDraft(draft), 400)
+    saveTimer.current = window.setTimeout(() => (hasRealChanges(draft, base) ? storeDraft(draft) : clearDraft(draft.date)), 400)
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current)
     }
-  }, [draft, phase.kind])
+  }, [draft, phase])
 
   const update = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
   const updateEntries = (fn: (entries: EditableEntry[]) => EditableEntry[]) => setDraft((d) => (d ? { ...d, entries: fn(d.entries), entriesTouched: true } : d))
@@ -235,7 +238,7 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
     if (next) update({ step: next })
     else if (delta < 0) onExit()
   }
-  const hasChanges = Object.keys(buildUpdate(draft, loaded)).length > 0
+  const hasChanges = hasRealChanges(draft, loaded)
   const diaryUpdate = buildUpdate(draft, loaded, previewPath, weather.data)
   const saving = phase.kind === 'saving'
 
@@ -285,9 +288,15 @@ export default function Wizard({ date, onExit }: { date: string; onExit: () => v
               </p>
             </div>
           </div>
-          <div className="progress" aria-hidden="true">
+          <div className="progress">
             {STEPS.map((s, i) => (
-              <span key={s} className={i < stepIndex ? 'done' : i === stepIndex ? 'now' : ''} />
+              <button
+                key={s}
+                className={i < stepIndex ? 'done' : i === stepIndex ? 'now' : ''}
+                aria-label={`${STEP_META[s].title}へ`}
+                aria-current={i === stepIndex ? 'step' : undefined}
+                onClick={() => !saving && update({ step: s })}
+              />
             ))}
           </div>
         </div>
@@ -508,7 +517,7 @@ function EntryCard({ entry, onChange, onDelete, onAddPhotos, onRemovePhoto, auto
           ))}
         </div>
       )}
-      <textarea className="field entry-text" rows={4} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
+      <textarea className="field entry-text" rows={6} placeholder="何がありましたか？" value={entry.text.join('\n')} onChange={(e) => onChange({ text: e.target.value.split('\n') })} />
       <div className="entry-links">
         {entry.place ? (
           <span className="tag mint removable">
