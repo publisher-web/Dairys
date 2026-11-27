@@ -1,7 +1,7 @@
 import { PEOPLE_FOLDER, PERSON_TEMPLATE, PLACE_TEMPLATE, PLACES_FOLDER, SCHOOLS_FOLDER, TEMPLATES_FOLDER } from '../config'
 import { DropboxError, listFolder } from '../dropbox/api'
 import { notePath } from '../dropbox/guard'
-import { readVaultText, resolveVaultRoot, writeVaultFile } from '../dropbox/vault'
+import { deleteVaultNote, readVaultText, resolveVaultRoot, writeVaultFile } from '../dropbox/vault'
 import { PLACE_FOLDERS, type Person, type Place } from './directory'
 import { emptyPerson, newPersonText, parsePerson, personSkeleton, setRelationIfEmpty, type Relation } from './person'
 import { emptyPlace, newPlaceText } from './place'
@@ -31,6 +31,15 @@ export async function updateNote(path: string, transform: (text: string) => stri
     }
   }
   throw new Error('保存が混み合っています。少し待ってからもう一度ためしてください')
+}
+
+export async function deleteNote(path: string, rev: string): Promise<void> {
+  try {
+    await deleteVaultNote(path, rev)
+  } catch (e) {
+    if (e instanceof DropboxError && e.isConflict) throw new Error('ほかの端末で変更されています。開き直してから削除してください')
+    throw e
+  }
 }
 
 async function createNote(path: string, text: string) {

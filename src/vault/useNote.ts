@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { readVaultBlob } from '../dropbox/vault'
+import { imageUrl } from './images'
 import { readNote } from './notes'
 
 type Found = { text: string; rev: string }
@@ -30,17 +30,11 @@ export function useVaultImage(path: string | null): string | null {
   useEffect(() => {
     if (!path) return
     let alive = true
-    let made: string | null = null
-    readVaultBlob(path)
-      .then((blob) => {
-        if (!alive) return
-        made = URL.createObjectURL(blob)
-        setImage({ path, url: made })
-      })
+    imageUrl(path)
+      .then((url) => alive && setImage({ path, url }))
       .catch(() => undefined)
     return () => {
       alive = false
-      if (made) URL.revokeObjectURL(made)
     }
   }, [path])
 

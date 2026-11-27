@@ -135,3 +135,7 @@ export async function upload(path: string, content: Blob | string, mode: WriteMo
     throw new DropboxError('files/upload', res.status, await res.text())
   }
 }
+
+export async function deleteFile(path: string, parentRev: string): Promise<void> {
+  await rpc('files/delete_v2', { path, parent_rev: parentRev })
+}

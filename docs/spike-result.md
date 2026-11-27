@@ -30,3 +30,4 @@
 
 - Windows で作った `package-lock.json` には、Linux 用の任意依存（rolldown の wasm 版が使う `@emnapi/core` など）が記録されず、GitHub Actions の `npm ci` が「lock ファイルと同期していない」で失敗した。`npm install --package-lock-only` でも直らない [確証]
 - 対処: CI では `npm ci` ではなく `npm install --no-audit --no-fund` を使う
+- iOS Safari の `<input type="date">` は既定の最小幅を持ち、`width: 100%` でも親からはみ出す。`appearance: none`＋`min-width: 0`＋`display: block` で直る（`src/index.css`）。空欄をタップすると今日の日付が入るので、日付欄には「消す」ボタンを付けた [一般知識]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertWritablePath, diaryPath, noteNameProblem, notePath, UnsafePathError } from './guard'
+import { assertDeletablePath, assertWritablePath, diaryPath, noteNameProblem, notePath, UnsafePathError } from './guard'
 
 const ROOT = '/アプリ/remotely-save/Diary'
 
@@ -58,5 +58,15 @@ describe('note names', () => {
 
   it.each(['', '  ', 'a/b', 'a|b', '[[a]]', '_a', '.a', 'a#b'])('rejects %j', (name) => {
     expect(noteNameProblem(name)).not.toBeNull()
+  })
+})
+
+describe('assertDeletablePath', () => {
+  it.each([`${ROOT}/30_HumanNetwork/10_People/姓 名.md`, `${ROOT}/30_HumanNetwork/40_Places/店.md`])('allows %s', (path) => {
+    expect(() => assertDeletablePath(ROOT, path)).not.toThrow()
+  })
+
+  it.each([`${ROOT}/40_Diary/2026-11-27.md`, `${ROOT}/30_HumanNetwork/30_Events/x.md`, `${ROOT}/90_Templates/Person Template.md`, `${ROOT}/attachments/a.jpg`, `${ROOT}/30_HumanNetwork/10_People/../a.md`])('rejects %s', (path) => {
+    expect(() => assertDeletablePath(ROOT, path)).toThrow(UnsafePathError)
   })
 })

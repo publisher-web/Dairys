@@ -1,5 +1,6 @@
 import type { Person, Place, PlaceKind } from '../vault/directory'
 import { displayName } from '../vault/search'
+import { useVaultImage } from '../vault/useNote'
 import { Glyph } from './Icon'
 
 type Item = Person | Place
@@ -20,10 +21,15 @@ export default function Avatar({ item }: { item: Item }) {
         <Glyph name="pin" size={18} />
       </span>
     )
+  return <PersonAvatar item={item} />
+}
+
+function PersonAvatar({ item }: { item: Person }) {
+  const url = useVaultImage(item.photo)
   const label = displayName(item)
   return (
     <span className="avatar" style={{ background: AVATAR_COLORS[hash(item.name) % AVATAR_COLORS.length] }}>
-      {[...label][0]}
+      {url ? <img src={url} alt="" /> : [...label][0]}
     </span>
   )
 }

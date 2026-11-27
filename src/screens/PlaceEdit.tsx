@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { fromDateString } from '../lib/date'
 import { KIND_LABEL } from '../vault/labels'
 import { ListField, TextField } from '../ui/Fields'
+import DeleteNote from '../ui/DeleteNote'
 import { Glyph } from '../ui/Icon'
 import { reloadDirectory, type Place } from '../vault/directory'
-import { updateNote } from '../vault/notes'
+import { deleteNote, updateNote } from '../vault/notes'
 import { applyPlace, mapUrl, parsePlace, type PlaceNote } from '../vault/place'
 import { useDirectory } from '../vault/useDirectory'
 import { useNote } from '../vault/useNote'
@@ -14,7 +15,7 @@ function shortDate(s: string): string {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
 }
 
-export default function PlaceEdit({ place }: { place: Place }) {
+export default function PlaceEdit({ place, onDeleted }: { place: Place; onDeleted: () => void }) {
   const dir = useDirectory()
   const { found, error, reload } = useNote(place.path)
   const note = useMemo(() => (found ? parsePlace(found.text, place.name) : null), [found, place.name])
@@ -108,6 +109,16 @@ export default function PlaceEdit({ place }: { place: Place }) {
           {saving ? '保存しています…' : '保存する'}
         </button>
       </div>
+      <DeleteNote
+        kindLabel={KIND_LABEL[place.kind]}
+        name={place.name}
+        usageCount={usage?.count ?? 0}
+        onDelete={async () => {
+          await deleteNote(place.path, found.rev)
+          await reloadDirectory()
+          onDeleted()
+        }}
+      />
     </div>
   )
 }

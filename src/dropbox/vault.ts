@@ -1,6 +1,6 @@
 import { REMOTELY_SAVE_FOLDER, VAULT_NAME } from '../config'
-import { downloadBlob, downloadText, getMetadata, listFolder, upload, type Entry, type WriteMode } from './api'
-import { assertWritablePath, diaryPath } from './guard'
+import { deleteFile, downloadBlob, downloadText, getMetadata, listFolder, upload, type Entry, type WriteMode } from './api'
+import { assertDeletablePath, assertWritablePath, diaryPath } from './guard'
 
 const ROOT_KEY = 'dairys.vaultRoot'
 
@@ -50,6 +50,11 @@ export async function readVaultText(path: string): Promise<VaultText | null> {
 export async function writeVaultFile(path: string, content: Blob | string, mode: WriteMode): Promise<Entry> {
   assertWritablePath(await resolveVaultRoot(), path)
   return upload(path, content, mode)
+}
+
+export async function deleteVaultNote(path: string, rev: string): Promise<void> {
+  assertDeletablePath(await resolveVaultRoot(), path)
+  await deleteFile(path, rev)
 }
 
 export async function readDiaryText(date: string): Promise<VaultText | null> {

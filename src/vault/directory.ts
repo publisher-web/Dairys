@@ -3,12 +3,13 @@ import { DropboxError, downloadText, listFolder, listFolderRecursive, type Entry
 import { resolveVaultRoot } from '../dropbox/vault'
 import { kvGet, kvSet } from '../storage/kv'
 import { frontmatterOf, readList, readScalar } from './frontmatter'
+import { photoOf } from './person'
 import { buildUsage, extractLinkTargets, unresolvedLinks, type LinkUsage, type Unresolved } from './links'
 
 export type PlaceKind = 'place' | 'school' | 'company'
 
 type NoteBase = { name: string; path: string; reading: string | null; aliases: string[] }
-export type Person = NoteBase & { kind: 'person'; relation: string | null }
+export type Person = NoteBase & { kind: 'person'; relation: string | null; photo: string | null }
 export type Place = NoteBase & { kind: PlaceKind; category: string | null }
 
 export const PLACE_FOLDERS: { path: string; kind: PlaceKind }[] = [
@@ -19,11 +20,11 @@ export const PLACE_FOLDERS: { path: string; kind: PlaceKind }[] = [
 
 export type LinkSource = { path: string; date: string; targets: string[] }
 
-type NoteCache = { rev: string; reading: string | null; aliases: string[]; relation: string | null; category: string | null }
+type NoteCache = { rev: string; reading: string | null; aliases: string[]; relation: string | null; category: string | null; photo: string | null }
 type LinkCache = { rev: string; targets: string[] }
 type Cache = { notes: Record<string, NoteCache>; links: Record<string, LinkCache> }
 
-const CACHE_KEY = 'directory:v2'
+const CACHE_KEY = 'directory:v3'
 const CONCURRENCY = 8
 
 export type DirectoryState = {
@@ -107,7 +108,7 @@ async function load(refresh: boolean) {
     const c = cache.notes[keyOf(f)]
     return { name: baseName(f), path: f.path_display, reading: c?.reading ?? null, aliases: c?.aliases ?? [] }
   }
-  const buildPeople = (): Person[] => peopleFiles.map((f) => ({ kind: 'person', ...toItem(f), relation: cache.notes[keyOf(f)]?.relation ?? null }))
+  const buildPeople = (): Person[] => peopleFiles.map((f) => ({ kind: 'person', ...toItem(f), relation: cache.notes[keyOf(f)]?.relation ?? null, photo: cache.notes[keyOf(f)]?.photo ?? null }))
   const buildPlaces = (): Place[] => placeGroups.flatMap((g) => g.files.map((f) => ({ kind: g.kind, ...toItem(f), category: cache.notes[keyOf(f)]?.category ?? null })))
   const buildSources = (): LinkSource[] => linkFiles.map((f) => ({ path: f.path_display, date: dateOf(f)!, targets: cache.links[keyOf(f)]?.targets ?? [] }))
   const buildUsageNow = () => buildUsage(buildSources())
@@ -123,8 +124,9 @@ async function load(refresh: boolean) {
     if (done % 8 === 0 || done === total) setState({ progress: { done, total } })
   }
   const fetchNote = async (f: Entry) => {
-    const fm = frontmatterOf(await downloadText(f.path_display))
-    cache.notes[keyOf(f)] = { rev: f.rev ?? '', reading: readScalar(fm, 'reading'), aliases: readList(fm, 'aliases'), relation: readScalar(fm, 'relation'), category: readScalar(fm, '種別') }
+    const text = await downloadText(f.path_display)
+    const fm = frontmatterOf(text)
+    cache.notes[keyOf(f)] = { rev: f.rev ?? '', reading: readScalar(fm, 'reading'), aliases: readList(fm, 'aliases'), relation: readScalar(fm, 'relation'), category: readScalar(fm, '種別'), photo: photoOf(text) }
     tick()
   }
 

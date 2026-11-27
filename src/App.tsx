@@ -142,9 +142,9 @@ export default function App() {
             onOpen={(item) => setScreen(item.kind === 'person' ? { kind: 'person', person: item } : { kind: 'place', place: item })}
           />
         ) : screen.kind === 'person' ? (
-          <PersonEdit key={screen.person.path} person={screen.person} />
+          <PersonEdit key={screen.person.path} person={screen.person} onDeleted={() => setScreen({ kind: 'directory' })} />
         ) : screen.kind === 'place' ? (
-          <PlaceEdit key={screen.place.path} place={screen.place} />
+          <PlaceEdit key={screen.place.path} place={screen.place} onDeleted={() => setScreen({ kind: 'directory' })} />
         ) : screen.kind === 'wizard' ? (
           <Wizard date={screen.date} onExit={toHome} />
         ) : (

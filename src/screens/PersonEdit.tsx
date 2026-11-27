@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { preparePhoto, uploadPhoto, type PendingPhoto } from '../diary/photos'
 import { fromDateString } from '../lib/date'
 import { FamilyField, LinkTextField, ListField, Segments, TextField } from '../ui/Fields'
+import DeleteNote from '../ui/DeleteNote'
 import { Glyph, TileIcon } from '../ui/Icon'
 import { reloadDirectory, type Person } from '../vault/directory'
-import { updateNote } from '../vault/notes'
+import { deleteNote, updateNote } from '../vault/notes'
 import { applyPerson, FAMILY_LINK_KEYS, parsePerson, RELATIONS, type PersonNote } from '../vault/person'
 import { useDirectory } from '../vault/useDirectory'
 import { useNote, useVaultImage } from '../vault/useNote'
@@ -16,7 +17,7 @@ function shortDate(s: string): string {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
 }
 
-export default function PersonEdit({ person }: { person: Person }) {
+export default function PersonEdit({ person, onDeleted }: { person: Person; onDeleted: () => void }) {
   const dir = useDirectory()
   const { found, error, reload } = useNote(person.path)
   const note = useMemo(() => (found ? parsePerson(found.text, person.name) : null), [found, person.name])
@@ -122,7 +123,7 @@ export default function PersonEdit({ person }: { person: Person }) {
         <TextField label="読み" value={draft.reading} placeholder="ひらがなで" onChange={(v) => set('reading', v)} />
         <ListField label="呼び名（日記での表示）" values={draft.aliases} placeholder="例：たろちゃん" onChange={(v) => set('aliases', v)} />
         <Segments label="間柄" options={RELATIONS} value={draft.relation} onChange={(v) => set('relation', v)} />
-        <TextField label="誕生日" type={!draft.birthDate || ISO_DATE.test(draft.birthDate) ? 'date' : 'text'} value={draft.birthDate} onChange={(v) => set('birthDate', v)} />
+        <TextField label="誕生日" type={!draft.birthDate || ISO_DATE.test(draft.birthDate) ? 'date' : 'text'} value={draft.birthDate} clearable onChange={(v) => set('birthDate', v)} />
       </section>
 
       <section className="card stack">
@@ -144,7 +145,7 @@ export default function PersonEdit({ person }: { person: Person }) {
         {FAMILY_LINK_KEYS.map((key) => (
           <FamilyField key={key} label={key} value={draft.family[key]} onChange={(v) => set('family', { ...draft.family, [key]: v })} />
         ))}
-        <TextField label="結婚記念日" value={draft.family.結婚記念日} onChange={(v) => set('family', { ...draft.family, 結婚記念日: v })} />
+        <TextField label="結婚記念日" value={draft.family.結婚記念日} clearable onChange={(v) => set('family', { ...draft.family, 結婚記念日: v })} />
       </section>
 
       <section className="card stack">
@@ -165,6 +166,16 @@ export default function PersonEdit({ person }: { person: Person }) {
           {saving ? '保存しています…' : '保存する'}
         </button>
       </div>
+      <DeleteNote
+        kindLabel="人物"
+        name={person.name}
+        usageCount={usage?.count ?? 0}
+        onDelete={async () => {
+          await deleteNote(person.path, found.rev)
+          await reloadDirectory()
+          onDeleted()
+        }}
+      />
     </div>
   )
 }

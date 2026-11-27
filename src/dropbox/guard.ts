@@ -26,6 +26,14 @@ export function assertWritablePath(vaultRoot: string, path: string): void {
   throw new UnsafePathError(`write not allowed: ${path}`)
 }
 
+const DELETABLE_FOLDERS = [PEOPLE_FOLDER, PLACES_FOLDER, SCHOOLS_FOLDER, COMPANIES_FOLDER]
+
+export function assertDeletablePath(vaultRoot: string, path: string): void {
+  assertWritablePath(vaultRoot, path)
+  const relative = path.slice(vaultRoot.length + 1).toLowerCase()
+  if (!DELETABLE_FOLDERS.some((f) => relative.startsWith(`${f}/`.toLowerCase()))) throw new UnsafePathError(`delete not allowed: ${path}`)
+}
+
 export function diaryPath(vaultRoot: string, date: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new UnsafePathError(`invalid date: ${date}`)
   return `${vaultRoot}/${DIARY_FOLDER}/${date}.md`

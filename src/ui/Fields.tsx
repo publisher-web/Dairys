@@ -12,11 +12,29 @@ export function FieldRow({ label, children }: { label: string; children: ReactNo
   )
 }
 
-export function TextField({ label, value, onChange, type = 'text', placeholder, suggestions }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; suggestions?: string[] }) {
+type TextFieldProps = { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; suggestions?: string[]; clearable?: boolean }
+
+export function TextField({ label, value, onChange, type = 'text', placeholder, suggestions, clearable }: TextFieldProps) {
   const listId = useId()
+  const input = <input className="field" type={type} value={value} placeholder={placeholder} list={suggestions ? listId : undefined} onChange={(e) => onChange(e.target.value)} />
   return (
     <FieldRow label={label}>
-      <input className="field" type={type} value={value} placeholder={placeholder} list={suggestions ? listId : undefined} onChange={(e) => onChange(e.target.value)} />
+      {clearable ? (
+        <span className="field-with-clear">
+          {input}
+          {value && (
+            <button type="button" className="chip-add" onClick={(e) => {
+              e.preventDefault()
+              onChange('')
+            }}>
+              <Glyph name="close" size={14} />
+              消す
+            </button>
+          )}
+        </span>
+      ) : (
+        input
+      )}
       {suggestions && (
         <datalist id={listId}>
           {suggestions.map((s) => (

@@ -55,6 +55,12 @@ function preambleView(preamble: string[]): { h1: number; photo: number; memo: st
   return { h1, photo, memo: rest.join('\n') }
 }
 
+export function photoOf(text: string): string | null {
+  const preamble = parseDocument(text).preamble
+  const i = preambleView(preamble).photo
+  return i >= 0 ? PHOTO_LINE_RE.exec(preamble[i].trim())![1] : null
+}
+
 export function parsePerson(text: string, name: string): PersonNote {
   const parts = parseDocument(text)
   const fm = parts.frontmatter ?? []
